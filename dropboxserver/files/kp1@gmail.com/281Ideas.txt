@@ -1,0 +1,39 @@
+
+
+Smart Emergency System :
+
+Sources of Data : 
+	1. Video Camera - captures images
+	2. Weather API - if it was rainy or chilly - was it the reason for stay back
+	3. Sensors data for identifying people density
+	4. Class schedule - was there a deadline for submitting assignment (could be a reason for late night stay) or was there an event which made ppl to stay back 
+	
+Objective:
+	1. Provide emergency support by enabling system to respond to pre-configured risk image patterns (Image gestures) in real time
+	
+Analysis:
+	1. Security breach is happening during what time of the day
+	2. Are there people around when the incident took place
+	3. Was there an event or assignment due or class or weather codition or any reason for the person to be in campus --- this is not real time data --- this could be used as historical data for analysis
+	4. Historical analysis -- kind of security breach, what kind of ppl were targetted, was system intelligent enough to respond in realtime
+	5. Based on class schedule data and breach data, suggest a different timing for classes
+	
+Actionable Insights:
+	1. Identify locations that have proven vulnurable for braches and increase security	
+	2. Identify target ppl for breaches and provide saftey guides for those ppl
+	
+	
+	
+Smart Resource Utilization :
+	Usually the resource is shared among people and need to be monitored to make sure it is used efficiently
+	
+	Eg: ENG390 - Priniting Room
+	
+	
+	
+	
+	
+	
+	
+	
+Get feedback from user 
