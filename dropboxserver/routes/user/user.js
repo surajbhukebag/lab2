@@ -1,6 +1,7 @@
 var mysql = require('./../mysql/userMysql');
 var fs = require('fs');
 var bcrypt = require('bcrypt');
+var kafka = require("./../kafka/client");
 
 function signup(req, res) {
 
@@ -39,7 +40,24 @@ function signup(req, res) {
 	
 }
 
+
 function signin(req, res) {
+
+    kafka.make_request('signinTopic', { "email": req.param("email"), "password": req.param("password") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+            res.send(JSON.stringify({ code: 500, loggedIn: false, msg: "Login Failed" }));
+        } else {
+            if (results.code == 200) {
+                res.send(JSON.stringify({ code: results.code, loggedIn: true, user: results.user, pinfo: results.pinfo, eduinfo: results.eduInfo }));
+            } else {
+                res.send(JSON.stringify({ code: 500, loggedIn: false, msg: results.msg }));
+            }
+        }
+    });
+}
+
+function signin_old(req, res) {
 
 	res.setHeader('Content-Type', 'application/json');
 	let checkUsernameQuery = "select * from user where email = ?";
