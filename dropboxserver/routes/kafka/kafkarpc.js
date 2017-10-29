@@ -41,7 +41,6 @@ KafkaRPC.prototype.makeRequest = function(topic_name, content, callback){
 
     //make sure we have a response topic
     self.setupResponseQueue(self.producer,topic_name,function(){
-        console.log('aaaaaa');
         //put the request on a topic
 
         var payloads = [
@@ -51,20 +50,20 @@ KafkaRPC.prototype.makeRequest = function(topic_name, content, callback){
                 data:content}),
                 partition:0}
         ];
-        console.log('in response1');
+        console.log('in response1 for topic :'+topic_name);
         console.log(self.producer.ready);
         self.producer.send(payloads, function(err, data){
-            console.log('in response2');
+            console.log('Response from Kafka');
             if(err)
-                console.log(err);
-            console.log(data);
+                console.log("error :"+err);
+            console.log("data:"+data);
         });
     });
 };
 
 
 KafkaRPC.prototype.setupResponseQueue = function(producer,topic_name, next){
-    console.log("bbbbbbbbb");
+
     //don't mess around if we have a queue
     if(this.response_queue) return next();
 
