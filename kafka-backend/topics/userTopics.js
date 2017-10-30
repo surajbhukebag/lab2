@@ -1,11 +1,10 @@
-var connection = new require('./../kafka/connection');
 var user = require('./../services/users/users');
 
 function signinTopic(message, producer) {
 
     var data = JSON.parse(message.value);
     user.signin(data.data, function(err, res) {
-        console.log("err : " + err);
+ 
         var payloads = [{
             topic: data.replyTo,
             messages: JSON.stringify({
