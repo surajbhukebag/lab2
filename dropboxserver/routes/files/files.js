@@ -2,148 +2,38 @@ var fs = require('fs');
 var rmrf = require('rimraf');
 var mysql = require('./../mysql/fileMysql');
 var usermysql = require('./../mysql/userMysql');
+var kafka = require("./../kafka/client");
 
 function listdir(req,res)
 {
  
-	var response = "";
-	let isRoot = true;
-	console.log("dir : "+req.param('dir'));
-	let dir = req.param('dir');
-	let createdBy = req.param('id');
-
-	console.log("path : "+dir);
-	console.log("created by :"+createdBy);
-
-	if(dir !== '/' && dir.lastIndexOf('/') === 0) {
-		let n = dir.substring(1);
-		let getFodlerQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-		mysql.getFileByPathAndName(function(r, err){
-			if(!err) {
-				let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-				mysql.checkFileActivity(function(rr, err) {
-					
-					if(!err) {
-						
-						if(rr.length === 0) {
-							let addToFileActivityQuery  = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-							mysql.addToFileActivity(function(err){
-							}, addToFileActivityQuery, createdBy, r[0].id);	
-						}
-						else {
-							
-							let updateFileActivityQuery  = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-							mysql.addToFileActivity(function(err){
-							}, updateFileActivityQuery, createdBy, r[0].id);	
-						}
-					}
-				}, checkFileActivityQuery, createdBy, r[0].id);				
-			}
-			
-		}, getFodlerQuery, createdBy, n, "/");
-							
-	}
-
-	let filesQuery = "select * from files where createdBy = ? and path = ?";
-	mysql.getFileList(function(files, err) {
-
-		if(!err) {
-			var result = [];
-			for(var i = 0; i < files.length; i++) {
-				let path = "";
-				if(files[i].path === '/') {
-					path = files[i].path+files[i].name;
-				}
-				else {
-					path = files[i].path+"/"+files[i].name;
-				}
-
-				result.push({fileId:files[i].id, path: path, isDirectory: files[i].isDirectory, name:files[i].name, starred:files[i].isStarred});
-			}
-			let responseJson = {code:200, files:result}
-			res.send(JSON.stringify(responseJson));		
-		}
-		else {
-			res.send(JSON.stringify({code:500,msg:"Unable to fetch files."}));	
-		}
-	}, filesQuery, createdBy, dir);
+	 kafka.make_request('listdirTopic', { "id": req.param("id"), "dir": req.param("dir") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+        	console.log(err);
+            res.send(JSON.stringify({ code: 500, msg: err }));
+        } else {
+			let responseJson = {code:200, files:results.files}
+			res.send(JSON.stringify(responseJson));	
+        }
+    });
 
 	
 }
 
 function listSharedDir(req,res)
 {
-
  
-	var response = "";
-	let isRoot = true;
-	console.log("dir : "+req.param('dir'));
-	let dir = req.param('dir');
-	let createdBy = req.param('id');
-	let loggedInUser = req.param('user');
-
-	console.log("path : "+dir);
-	console.log("name : "+dir);
-	console.log("created by :"+createdBy);
-
-	if(dir !== '/' && dir.lastIndexOf('/') === 0) {
-		let n = dir.substring(1);
-		let getFodlerQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-		mysql.getFileByPathAndName(function(r, err){
-			if(!err) {
-				if(createdBy == loggedInUser) {
-
-					let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-					mysql.checkFileActivity(function(rr, err) {
-						
-						if(!err) {
-							
-							if(rr.length === 0) {
-								let addToFileActivityQuery  = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-								mysql.addToFileActivity(function(err){
-								}, addToFileActivityQuery, createdBy, r[0].id);	
-							}
-							else {
-								
-								let updateFileActivityQuery  = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-								mysql.addToFileActivity(function(err){
-								}, updateFileActivityQuery, createdBy, r[0].id);	
-							}
-						}
-					}, checkFileActivityQuery, createdBy, r[0].id);
-
-				}
-				
-			}
-			
-		}, getFodlerQuery, createdBy, n, "/");
-							
-	}
-
-	let filesQuery = "select * from files where path = ? and (createdBy = ? or createdBy in (select sharedWith from sharedfiles where sharedBy = ?))";
-	mysql.getSharedFileList(function(files, err) {
-
-		if(!err) {
-			var result = [];
-			for(var i = 0; i < files.length; i++) {
-				let path = "";
-				if(files[i].path === '/') {
-					path = files[i].path+files[i].name;
-				}
-				else {
-					path = files[i].path+"/"+files[i].name;
-				}
-
-				result.push({owner:files[i].createdBy, fileId:files[i].id, path: path, isDirectory: files[i].isDirectory, name:files[i].name, starred:files[i].isStarred});
-			}
-			let responseJson = {code:200, files:result}
-			res.send(JSON.stringify(responseJson));		
-		}
-		else {
-			res.send(JSON.stringify({code:500,msg:"Unable to fetch files."}));	
-		}
-	}, filesQuery, createdBy, dir);
-
+	 kafka.make_request('listSharedDirTopic', { "id": req.param("id"), "dir": req.param("dir"), "user": req.param("user") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+        	console.log(err);
+            res.send(JSON.stringify({ code: 500, msg: err }));
+        } else {
+			let responseJson = {code:200, files:results.files}
+			res.send(JSON.stringify(responseJson));	
+        }
+    });
 	
 }
 

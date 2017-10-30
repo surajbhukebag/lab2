@@ -5,7 +5,6 @@ var kafka = require("./../kafka/client");
 
 function signup(req, res) {
 
-    console.log("ddd");
     kafka.make_request('signupTopic', { "email": req.param("email"), "password": req.param("password"), "fname": req.param("fname"), "lname": req.param("lname") }, function(err, results) {
         res.setHeader('Content-Type', 'application/json');
         if (err) {

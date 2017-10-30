@@ -5,8 +5,10 @@ function make_request(queue_name, msg_payload, callback){
     console.log('in make request'+queue_name);
     console.log(msg_payload.username);
 	rpc.makeRequest(queue_name, msg_payload, function(err, response){
-		if(err)
+		if(err) {
+			console.log("errpr : "+err);
 			callback(err, response);
+		}
 		else{
 			callback(null, response);
 		}
