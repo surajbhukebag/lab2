@@ -46,12 +46,28 @@ function signin(userdata, done) {
                                         if (ra.length > 0) {
                                             eduInfo = { college: ra[0].collegeName, sdate: ra[0].startDate, edate: ra[0].endDate, major: ra[0].major, gpa: ra[0].gpa };
                                         }
-                                        res.code = 200;
-                                        res.loggedIn = isPasswordMatch;
-                                        res.user = user;
-                                        res.pinfo = pinfo;
-                                        res.eduinfo = eduInfo;
-                                        done(err, res);
+                                        let getAllInterests = "SELECT i.name as name, u.comment as comment FROM userinterests u INNER JOIN interests i on u.interestId = i.id where u.userId = ?";
+                                        mysql.getAllInterests(function(ui, err) {
+                                            if (!err) {
+                                                let responseJson = [];
+                                                for (var i = 0; i < ui.length; i++) {
+                                                    responseJson.push({ name: ui[i].name, comment: ui[i].comment });
+                                                }
+                                                res.code = 200;
+                                                res.loggedIn = isPasswordMatch;
+                                                res.user = user;
+                                                res.pinfo = pinfo;
+                                                res.eduinfo = eduInfo;
+                                                res.interests = responseJson;
+                                                done(err, res);
+                                            } else {
+                                                res.code = 500;
+                                                res.msg = "Unable to access user data.Please try later.";
+                                                done(err, res);
+                                            }
+
+                                        }, getAllInterests, result[0].id);
+                      
                                     }
                                 }, getEduInfoQuery, result[0].id);
 

@@ -227,13 +227,61 @@ function userStarredFiles(message, producer) {
 
 function generateLink(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.generateLink(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
 }
 
 function share(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.share(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
 }
 
 function sharedFiles(message, producer) {
+
+    var data = JSON.parse(message.value);
+    filesClient.sharedFiles(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
 
 }
 
