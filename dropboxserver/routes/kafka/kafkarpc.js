@@ -53,6 +53,7 @@ KafkaRPC.prototype.makeRequest = function(topic_name, content, callback) {
             partition: 0
         }];
         console.log('in response1 for topic :' + topic_name);
+        console.log(payloads);
         console.log(self.producer.ready);
         self.producer.send(payloads, function(err, data) {
             console.log('Response from Kafka');
