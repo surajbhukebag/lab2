@@ -104,6 +104,7 @@ export function updateSigninUserData(resData, rData, actData) {
 			user: resData.user,
 			pinfo: resData.pinfo,
 			eduinfo: resData.eduinfo,
+			interests: resData.interests,
 			starred: rData.starred,
 			activity: actData.activity
 		}

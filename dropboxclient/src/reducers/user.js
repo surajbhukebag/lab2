@@ -46,6 +46,7 @@ const user = (state = initialState, action) => {
                                 "pinfo" : action.pinfo,
                                 "eduinfo" : action.eduinfo,
                                 "loggedin" : true,
+                                "interests" : action.interests,
                                 "starred" : action.starred,
                                 "activity" : action.activity                                
                             }
