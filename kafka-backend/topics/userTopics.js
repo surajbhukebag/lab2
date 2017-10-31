@@ -4,7 +4,6 @@ function signinTopic(message, producer) {
 
     var data = JSON.parse(message.value);
     user.signin(data.data, function(err, res) {
- 
         var payloads = [{
             topic: data.replyTo,
             messages: JSON.stringify({

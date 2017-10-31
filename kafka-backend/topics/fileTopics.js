@@ -23,7 +23,7 @@ function listdir(message, producer) {
 
 function listSharedDir(message, producer) {
 
-	var data = JSON.parse(message.value);
+    var data = JSON.parse(message.value);
     filesClient.listSharedDir(data.data, function(err, res) {
         var payloads = [{
             topic: data.replyTo,
@@ -126,8 +126,8 @@ function uploadfileToSharedFolder(message, producer) {
 }
 
 function filedownload(message, producer) {
-	
-	var data = JSON.parse(message.value);
+
+    var data = JSON.parse(message.value);
     files.fileDownload(data.data, function(err, res) {
         var payloads = [{
             topic: data.replyTo,
@@ -147,18 +147,82 @@ function filedownload(message, producer) {
 
 function fileFolderDelete(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.fileFolderDelete(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
+
 }
 
 function createFolder(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.createFolder(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
 }
 
 function starFile(message, producer) {
+    
+    var data = JSON.parse(message.value);
+    filesClient.starFile(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
 
 }
 
 function userStarredFiles(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.userStarredFiles(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
 }
 
 function generateLink(message, producer) {
@@ -175,10 +239,41 @@ function sharedFiles(message, producer) {
 
 function sharedFileLinks(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.sharedFileLinks(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
 }
 
 function userActivity(message, producer) {
 
+    var data = JSON.parse(message.value);
+    filesClient.userActivity(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
 }
 
 exports.listdir = listdir;

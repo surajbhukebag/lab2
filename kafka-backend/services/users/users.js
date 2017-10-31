@@ -6,7 +6,6 @@ function signin(userdata, done) {
 
     var res = {};
     let checkUsernameQuery = "select * from user where email = ?";
-    console.log("lll");
     mysql.checkUsername(function(uniqueUsername, err, result) {
 
         if (err) {

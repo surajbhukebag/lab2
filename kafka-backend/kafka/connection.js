@@ -1,8 +1,7 @@
 var kafka = require('kafka-node');
 
 function ConnectionProvider() {
-    this.getConsumer = function(topic_name) {
-      
+    this.getConsumer = function(topic_name) {      
 
             this.client = new kafka.Client("localhost:2181");
             this.kafkaConsumerConnection = new kafka.Consumer(this.client,[ { topic: topic_name, partition: 0 }]);

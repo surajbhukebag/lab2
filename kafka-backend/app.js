@@ -7,7 +7,7 @@ var producer = connection.getProducer();
 
 //user topics
 var signinConsumer = connection.getConsumer("signinTopic");
-signinConsumer.on('message', function (message) { userTopics.signinTopic(message, producer); });
+signinConsumer.on('message', function (message) { console.log("kkk"); userTopics.signinTopic(message, producer); });
 
 var signupConsumer = connection.getConsumer("signupTopic");
 signupConsumer.on('message', function (message) { userTopics.signupTopic(message, producer); });
