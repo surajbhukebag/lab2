@@ -37,7 +37,7 @@ function signin(req, res) {
             res.send(JSON.stringify({ code: 500, loggedIn: false, msg: "Login Failed" }));
         } else {
             if (results.code == 200) {
-                res.send(JSON.stringify({ code: results.code, loggedIn: true, user: results.user, pinfo: results.pinfo, eduinfo: results.eduInfo }));
+                res.send(JSON.stringify({ code: results.code, loggedIn: true, user: results.user, pinfo: results.pinfo, eduinfo: results.eduinfo, interests:results.interests }));
             } else {
                 res.send(JSON.stringify({ code: 500, loggedIn: false, msg: results.msg }));
             }
