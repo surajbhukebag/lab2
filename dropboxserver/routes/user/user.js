@@ -2,6 +2,7 @@ var mysql = require('./../mysql/userMysql');
 var fs = require('fs');
 var bcrypt = require('bcrypt');
 var kafka = require("./../kafka/client");
+var passport = require('passport');
 
 function signup(req, res) {
 
@@ -27,24 +28,6 @@ function signup(req, res) {
     });
 
 }
-
-
-function signin(req, res) {
-
-    kafka.make_request('signinTopic', { "email": req.param("email"), "password": req.param("password") }, function(err, results) {
-        res.setHeader('Content-Type', 'application/json');
-        if (err) {
-            res.send(JSON.stringify({ code: 500, loggedIn: false, msg: "Login Failed" }));
-        } else {
-            if (results.code == 200) {
-                res.send(JSON.stringify({ code: results.code, loggedIn: true, user: results.user, pinfo: results.pinfo, eduinfo: results.eduinfo, interests:results.interests }));
-            } else {
-                res.send(JSON.stringify({ code: 500, loggedIn: false, msg: results.msg }));
-            }
-        }
-    });
-}
-
 
 
 function signout(req, res) {
@@ -104,7 +87,6 @@ function userIntInfo(req, res) {
 }
 
 exports.signup = signup;
-exports.signin = signin;
 exports.signout = signout;
 exports.userPersonalInfo = userPersonalInfo;
 exports.userEduInfo = userEduInfo;
