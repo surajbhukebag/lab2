@@ -1,6 +1,6 @@
 var mysql = require('mysql');
 
-/*function getConnection(){
+function getConnection(){
 	var connection = mysql.createConnection({
 	    host     : 'localhost',
 	    user     : 'root',
@@ -10,8 +10,8 @@ var mysql = require('mysql');
 	});
 	return connection;
 }
-exports.getConnection = getConnection;*/
-var pool  = mysql.createPool({
+exports.getConnection = getConnection;
+/*var pool  = mysql.createPool({
     connectionLimit : 10,
     host     : 'localhost',
     user     : 'root',
@@ -20,6 +20,6 @@ var pool  = mysql.createPool({
     port     : 3306
 });
 
-module.exports.pool = pool;
+module.exports.pool = pool;*/
 
 

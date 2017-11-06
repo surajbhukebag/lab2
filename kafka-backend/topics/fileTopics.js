@@ -103,6 +103,23 @@ function getSharedFileDownloadLink(message, producer) {
 
 function downloadSharedFile(message, producer) {
 
+
+    var data = JSON.parse(message.value);
+    files.downloadSharedFile(data.data, function(err, res) {
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
 }
 
 function uploadfileToSharedFolder(message, producer) {
@@ -187,7 +204,7 @@ function createFolder(message, producer) {
 }
 
 function starFile(message, producer) {
-    
+
     var data = JSON.parse(message.value);
     filesClient.starFile(data.data, function(err, res) {
         var payloads = [{

@@ -1,4 +1,5 @@
-var mysql = require('./../mysql/userMysql_connectionpooled');
+//var mysql = require('./../mysql/userMysql_connectionpooled');
+var mysql = require('./../mysql/userMysql');
 var fs = require('fs');
 var bcrypt = require('bcrypt');
 
@@ -110,10 +111,19 @@ function signup(userdata, done) {
                     done(err, res);
                 } else {
 
-                    res.code = 200;
-                    res.msg = "User Registered";
-                    res.userId = userId;
-                    done(null, res);
+                    fs.mkdir("./files/" + userdata.email, function(err) {
+                        console.log("kl")
+                        if (err) {
+                            res.code = 500;
+                            res.msg = "User Signup failed with error : " + err;
+                            done(err, res);
+                        } else {
+                            res.code = 200;
+                            res.msg = "User Registered";
+                            res.userId = userId;
+                            done(null, res);
+                        }
+                    });
 
                 }
             }, signupQuery, userdata);

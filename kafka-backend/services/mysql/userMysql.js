@@ -1,7 +1,7 @@
 var mysql = require('./connection');
 var bcrypt = require('bcrypt');
 
-function userSignUp(callback,signupQuery, req){
+function userSignUp(callback,signupQuery, userdata){
     
     var connection=mysql.getConnection();
 
@@ -9,11 +9,11 @@ function userSignUp(callback,signupQuery, req){
     bcrypt.genSalt(10, function(err, salt) {
         if (!err) {
             
-            bcrypt.hash(req.param("password"), salt, function(err, hash) {
+            bcrypt.hash(userdata.password, salt, function(err, hash) {
 
                 if(!err) {
 
-                    connection.query(signupQuery, [req.param("fname"), req.param("lname"), req.param("email"), hash], function(err, result) {
+                    connection.query(signupQuery, [userdata.fname, userdata.lname, userdata.email, hash], function(err, result) {
                         if(err){
                             callback(null, err);
                         }
@@ -40,12 +40,12 @@ function userSignUp(callback,signupQuery, req){
 }
 
 
-function checkUsername(callback,checkUsernameQuery, req){
+function checkUsername(callback,checkUsernameQuery, email){
     
     var connection=mysql.getConnection();
 
 
-    connection.query(checkUsernameQuery, req.param("email"), function(err, result) {
+    connection.query(checkUsernameQuery, email, function(err, result) {
             
         if(err){
             console.log(err);
@@ -117,11 +117,11 @@ function getUserById(callback,getUserByIdQuery, id){
 
 }
 
-function userPinfo(callback, userPinfoQuery, req, userId){
+function userPinfo(callback, userPinfoQuery, userdata, userId){
     
     var connection=mysql.getConnection();
 
-    connection.query(userPinfoQuery, [req.param("dob"), req.param("contact"), userId], function(err, result) {
+    connection.query(userPinfoQuery, [userdata.dob, userdata.contact, userId], function(err, result) {
         if(err){
             callback(null, err, userId);
         }
@@ -135,11 +135,11 @@ function userPinfo(callback, userPinfoQuery, req, userId){
 
 }
 
-function userPinfoUpdate(callback, userPinfoUpdateQuery, req, userId){
+function userPinfoUpdate(callback, userPinfoUpdateQuery, userdata, userId){
     
     var connection=mysql.getConnection();
 
-    connection.query(userPinfoUpdateQuery, [req.param("dob"), req.param("contact"), userId], function(err, result) {
+    connection.query(userPinfoUpdateQuery, [userdata.dob, userdata.contact, userId], function(err, result) {
         if(err){
             callback(null, err, userId);
         }
@@ -197,11 +197,11 @@ function checkEduinfo(callback,getEduInfoQuery, uid){
 
 }
 
-function userEduinfoUpdate(callback, userEduInfoUpdateQuery, req, userId){
+function userEduinfoUpdate(callback, userEduInfoUpdateQuery, userdata, userId){
     
     var connection=mysql.getConnection();
 
-    connection.query(userEduInfoUpdateQuery, [req.param("college"), req.param("sdate"), req.param("edate"), req.param("major"), req.param("gpa"), userId], function(err, result) {
+    connection.query(userEduInfoUpdateQuery, [userdata.college, userdata.sdate, userdata.edate, userdata.major, userdata.gpa, userId], function(err, result) {
         if(err){
             console.log(err);
             callback(null, err, userId);
@@ -216,11 +216,11 @@ function userEduinfoUpdate(callback, userEduInfoUpdateQuery, req, userId){
 
 }
 
-function userEduinfo(callback, userEduinfoQuery, req, userId){
+function userEduinfo(callback, userEduinfoQuery, userdata, userId){
     
     var connection=mysql.getConnection();
 
-    connection.query(userEduinfoQuery, [req.param("college"), req.param("sdate"), req.param("edate"), req.param("major"), req.param("gpa"), userId], function(err, result) {
+    connection.query(userEduinfoQuery, [userdata.college, userdata.sdate, userdata.edate, userdata.major, userdata.gpa, userId], function(err, result) {
         if(err){
             console.log(err);
             callback(null, err, userId);

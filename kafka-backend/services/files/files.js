@@ -1,6 +1,10 @@
-var mysql = require('./../mysql/fileMysql_connectionpooled');
-var usermysql = require('./../mysql/userMysql_connectionpooled');
+//var mysql = require('./../mysql/fileMysql_connectionpooled');
+//var usermysql = require('./../mysql/userMysql_connectionpooled');
+var mysql = require('./../mysql/fileMysql');
+var usermysql = require('./../mysql/userMysql');
 
+var fs = require("fs");
+var rmrf = require('rimraf');
 
 function listdir(userdata, done) {
 
@@ -113,8 +117,8 @@ function listSharedDir(userdata, done) {
                 } else {
                     path = files[i].path + "/" + files[i].name;
                 }
-
-                result.push({ owner: files[i].createdBy, fileId: files[i].id, path: path, isDirectory: files[i].isDirectory, name: files[i].name, starred: files[i].isStarred });
+                var link = "http://localhost:3001/fileDownload/"+files[i].link;
+                result.push({ link:link, owner: files[i].createdBy, fileId: files[i].id, path: path, isDirectory: files[i].isDirectory, name: files[i].name, starred: files[i].isStarred });
             }
             res.code = 200;
             res.files = result;
@@ -136,18 +140,27 @@ function createFolder(userdata, done) {
     usermysql.checkUsername(function(uniqueUsername, err, result) {
         if (!err) {
             let storeFileQuery = "insert into files (name, path, isDirectory, createdBy, dateCreated, isStarred) values (?,?,?,?,?,?)";
-            mysql.storeFileDetails(function(r, err, uId) {
-                if (!err) {
-                    res.code = 200;
-                    res.msg = "New folder created";
-                    done(null, res);
-                } else {
+
+            fs.mkdir("./files/" + userdata.email + userdata.path + "/" + userdata.folderName, function(err) {
+                if (err) {
                     res.code = 500;
                     res.msg = "New folder creation failed";
                     done(err, res);
-                }
+                } else {
+                    mysql.storeFileDetails(function(r, err, uId) {
+                        if (!err) {
+                            res.code = 200;
+                            res.msg = "New folder created";
+                            done(null, res);
+                        } else {
+                            res.code = 500;
+                            res.msg = "New folder creation failed";
+                            done(err, res);
+                        }
 
-            }, storeFileQuery, userdata.folderName, userdata.path, 1, result[0].id, new Date().getTime());
+                    }, storeFileQuery, userdata.folderName, userdata.path, 1, result[0].id, new Date().getTime());
+                }
+            });
 
         } else {
             res.code = 500;
@@ -179,9 +192,39 @@ function fileFolderDelete(userdata, done) {
     let deleteFileQuery = "delete from files where name = ? and path = ? and createdBy = ?";
     mysql.deleteFile(function(r, err) {
         if (!err) {
-            res.code = 200;
-            res.msg = "Folder Deletion successful";
-            done(null, res);
+
+            if (isDirectory) {
+
+                rmrf("./files/" + email + "/" + path, function(err) {
+                    if (err) {
+                        res.code = 500;
+                        res.msg = "Folder Deletion failed";
+                        done(err, res);
+
+                    } else {
+                        res.code = 200;
+                        res.msg = "Folder Deletion successful";
+                        done(null, res);
+                    }
+                });
+
+            } else {
+
+                fs.unlink("./files/" + email + "/" + path, function(err) {
+                    if (err) {
+                        res.code = 500;
+                        res.msg = "File Deletion failed";
+                        done(err, res);
+                    } else {
+                        res.code = 200;
+                        res.msg = "File Deletion successful";
+                        done(null, res);
+                    }
+                });
+
+            }
+
+
         } else {
             res.code = 500;
             res.msg = "Folder Deletion failed";
@@ -558,9 +601,9 @@ function generateLink(userdata, done) {
                     }, checkLinkQuery, r[0].id);
 
                 } else {
-                        res.code = 500;
-                        res.msg = "Unable to Generate Link.";
-                        done(err, res);
+                    res.code = 500;
+                    res.msg = "Unable to Generate Link.";
+                    done(err, res);
                 }
 
             }, userFilesQuery, result[0].id, name, path);
