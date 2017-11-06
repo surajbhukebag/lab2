@@ -12,21 +12,13 @@ function signup(req, res) {
             res.send(JSON.stringify({ code: 500, msg: "User Signup failed with error : " + err }));
         } else {
             if (results.code == 200) {
-
-                fs.mkdir("./files/" + req.param("email"), function(err) {
-                    if (!err) {
-                        res.send(JSON.stringify({ code: 200, userId: results.userId }));
-                    } else {
-                        res.send(JSON.stringify({ code: 500, msg: "Signup failed with error : " + err }));
-                    }
-                });
+                res.send(JSON.stringify({ code: 200, userId: results.userId, msg: results.msg}));
 
             } else {
                 res.send(JSON.stringify({ code: 500, msg: results.msg }));
             }
         }
     });
-
 }
 
 

@@ -5,9 +5,8 @@ module.exports = function(passport) {
     
     passport.use('local-login', new LocalStrategy({usernameField: 'email'}, function(email, password, done) {
         var res = {};
-        console.log("l");
         kafka.make_request('signinTopic', { "email": email, "password": password }, function(err, results) {
-
+            console.log("error : "+err);
             if (err) {
                 res.code = 500;
                 res.msg = "Login Failed";

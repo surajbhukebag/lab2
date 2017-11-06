@@ -81,9 +81,16 @@ app.post('/signup', cors(corsOptions), user.signup);
 app.post('/signin', cors(corsOptions), function(req, res) {
 
     passport.authenticate('local-login', function(err, results){
-      req.session.user = results.user;
       res.setHeader('Content-Type', 'application/json');
-      res.send(JSON.stringify(results));
+      if(!err) {
+        req.session.user = results.user; 
+        res.send(JSON.stringify(results)); 
+      } 
+      else {
+        res.send(JSON.stringify({"code":500, "msg":"Login Failed"}));
+      }
+      
+      
     })(req, res);
 
 });

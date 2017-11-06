@@ -42,16 +42,8 @@ function createFolder(req, res) {
         if (err) {
             res.send(JSON.stringify({ code: 500, msg: results.msg }));
         } else {
-
-            fs.mkdir("./files/" + req.param("email") + req.param("path") + "/" + req.param("folderName"), function(err) {
-                if (!err) {
-                    let responseJson = { code: 200, msg: "New folder created" };
-                    res.send(JSON.stringify(responseJson));
-                } else {
-                    res.send(JSON.stringify({ code: 500, msg: "New folder creation failed" }));
-                }
-            });
-
+            let responseJson = { code: 200, msg: "New folder created" };
+            res.send(JSON.stringify(responseJson));
         }
     });
 }
@@ -67,30 +59,7 @@ function fileFolderDelete(req, res) {
         if (err) {
             res.send(JSON.stringify({ code: 500, msg: results.msg }));
         } else {
-            if (isDirectory) {
-
-                rmrf("./files/" + email + "/" + path, function(err) {
-                    if (err) {
-                        console.log(err);
-                        res.send(JSON.stringify({ code: 500, msg: "Folder Deletion failed" }));
-
-                    } else {
-                        res.send(JSON.stringify({ code: 200, msg: "Folder Deletion successful" }));
-                    }
-                });
-
-            } else {
-
-                fs.unlink("./files/" + email + "/" + path, function(err) {
-                    if (err) {
-                        console.log(err);
-                        res.send(JSON.stringify({ code: 500, msg: "File Deletion failed" }));
-                    } else {
-                        res.send(JSON.stringify({ code: 200, msg: "File Deletion successful" }));
-                    }
-                });
-
-            }
+            res.send(JSON.stringify({ code: 200, msg: results.msg }));
         }
     });
 }
