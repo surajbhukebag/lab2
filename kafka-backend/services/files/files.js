@@ -2,67 +2,95 @@
 //var usermysql = require('./../mysql/userMysql_connectionpooled');
 var mysql = require('./../mysql/fileMysql');
 var usermysql = require('./../mysql/userMysql');
+var File = require('./../model/File');
+var User = require('./../model/User');
+var FileActivity = require('./../model/FileActivity');
+var FileLink = require('./../model/FileLink');
+
 
 var fs = require("fs");
 var rmrf = require('rimraf');
 
 function listdir(userdata, done) {
 
-    let isRoot = true;
-    let dir = userdata.dir;
-    let createdBy = userdata.id;
-    var res = {};
+ let isRoot = true;
+ let dir = userdata.dir;
+ let createdBy = userdata.id;
+ var res = {};
 
-    if (dir !== '/' && dir.lastIndexOf('/') === 0) {
-        let n = dir.substring(1);
-        let getFodlerQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-        mysql.getFileByPathAndName(function(r, err) {
-            if (!err) {
-                let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                mysql.checkFileActivity(function(rr, err) {
+ if (dir !== '/' && dir.lastIndexOf('/') === 0) {
+     let n = dir.substring(1);
+     File.findOne({ createdBy: createdBy, name: n, path: "/" }, function(err, file) {
 
-                    if (!err) {
+             if (!err) {
 
-                        if (rr.length === 0) {
-                            let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                            mysql.addToFileActivity(function(err) {}, addToFileActivityQuery, createdBy, r[0].id);
-                        } else {
+                 FileActivity.findOne({ fileId: file.id }, function(err, fileActivity) {
 
-                            let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                            mysql.addToFileActivity(function(err) {}, updateFileActivityQuery, createdBy, r[0].id);
-                        }
-                    }
-                }, checkFileActivityQuery, createdBy, r[0].id);
-            }
+                         if (!err) {
+                             if (fileActivity) {
+                                 fileActivity.dateCreated = new Date().getTime();
+                                 fileActivity.save(function(err) {
 
-        }, getFodlerQuery, createdBy, n, "/");
+                                 });
 
-    }
+                             } else {
 
-    let filesQuery = "select * from files where createdBy = ? and path = ?";
-    mysql.getFileList(function(files, err) {
+                                 var newFileActivity = FileActivity({
+                                     userId: createdBy,
+                                     file: {id:file.id ,name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link},
+                                     dateCreated: new Date().getTime()
+                                 });
+                                 newFileActivity.save(function(err) {
 
-        if (!err) {
-            var result = [];
-            for (var i = 0; i < files.length; i++) {
-                let path = "";
-                if (files[i].path === '/') {
-                    path = files[i].path + files[i].name;
-                } else {
-                    path = files[i].path + "/" + files[i].name;
-                }
+                                 });
 
-                result.push({ fileId: files[i].id, path: path, isDirectory: files[i].isDirectory, name: files[i].name, starred: files[i].isStarred });
-            }
-            res.code = 200;
-            res.files = result;
-            done(null, res);
-        } else {
-            res.code = 500;
-            res.msg = "Unable to fetch files.";
-            done(err, res);
-        }
-    }, filesQuery, createdBy, dir);
+                             }
+
+                         } else {
+                             res.code = 500;
+                             res.msg = "Unable to fetch files.";
+                             done(err, res);
+                         }
+
+                     });
+                 }
+                 else {
+
+                     res.code = 500;
+                     res.msg = "Unable to fetch files.";
+                     done(err, res);
+                 }
+
+             });
+     }
+
+     File.find({ createdBy: createdBy, path: dir }, function(err, files) {
+
+         if (!err) {
+             var result = [];
+             for (var i = 0; i < files.length; i++) {
+                 let path = "";
+                 if (files[i].path === '/') {
+                     path = files[i].path + files[i].name;
+                 } else {
+                     path = files[i].path + "/" + files[i].name;
+                 }
+                 let st = 0;
+                 if(files[i].isStarred) {
+                    st = 1;
+                 }
+                 result.push({ fileId: files[i].id, path: path, isDirectory: files[i].isDirectory, name: files[i].name, starred: st });
+             }
+             res.code = 200;
+             res.files = result;
+             done(null, res);
+         } else {
+             res.code = 500;
+             res.msg = "Unable to fetch files.";
+             done(err, res);
+         }
+
+     });
 }
 
 function listSharedDir(userdata, done) {
@@ -77,31 +105,48 @@ function listSharedDir(userdata, done) {
     if (dir !== '/' && dir.lastIndexOf('/') === 0) {
         let n = dir.substring(1);
         let getFodlerQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-        mysql.getFileByPathAndName(function(r, err) {
-            if (!err) {
-                if (createdBy == loggedInUser) {
+        File.findOne({ createdBy: createdBy, name: n, path: "/" }, function(err, file) {
 
-                    let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                    mysql.checkFileActivity(function(rr, err) {
+             if (!err) {
 
-                        if (!err) {
+                 FileActivity.findOne({ userId: createdBy ,fileId: file.id }, function(err, fileActivity) {
 
-                            if (rr.length === 0) {
-                                let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                                mysql.addToFileActivity(function(err) {}, addToFileActivityQuery, createdBy, r[0].id);
-                            } else {
+                         if (!err) {
+                             if (fileActivity) {
+                                 fileActivity.dateCreated = new Date().getTime();
+                                 fileActivity.save(function(err) {
 
-                                let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                                mysql.addToFileActivity(function(err) {}, updateFileActivityQuery, createdBy, r[0].id);
-                            }
-                        }
-                    }, checkFileActivityQuery, createdBy, r[0].id);
+                                 });
 
-                }
+                             } else {
 
-            }
+                                 var newFileActivity = FileActivity({
+                                     userId: createdBy,
+                                     fileId: {name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link},
+                                     dateCreated: new Date().getTime()
+                                 });
+                                 fileActivity.save(function(err) {
 
-        }, getFodlerQuery, createdBy, n, "/");
+                                 });
+
+                             }
+
+                         } else {
+                             res.code = 500;
+                             res.msg = "Unable to fetch files.";
+                             done(err, res);
+                         }
+
+                     });
+                 }
+                 else {
+
+                     res.code = 500;
+                     res.msg = "Unable to fetch files.";
+                     done(err, res);
+                 }
+
+             });
 
     }
 
@@ -136,42 +181,45 @@ function listSharedDir(userdata, done) {
 function createFolder(userdata, done) {
 
     var res = {};
-    let checkUsernameQuery = "select * from user where email = ?";
-    usermysql.checkUsername(function(uniqueUsername, err, result) {
-        if (!err) {
-            let storeFileQuery = "insert into files (name, path, isDirectory, createdBy, dateCreated, isStarred) values (?,?,?,?,?,?)";
 
-            fs.mkdir("./files/" + userdata.email + userdata.path + "/" + userdata.folderName, function(err) {
-                if (err) {
-                    res.code = 500;
-                    res.msg = "New folder creation failed";
-                    done(err, res);
-                } else {
-                    mysql.storeFileDetails(function(r, err, uId) {
-                        if (!err) {
-                            res.code = 200;
-                            res.msg = "New folder created";
-                            done(null, res);
-                        } else {
+    User.findOne({ email: userdata.email }, function(err, user) {
+
+        if (!err) {
+
+            var newFolder = File({ name: userdata.folderName, path: userdata.path, isDirectory: true, createdBy: user.id, dateCreated: new Date().getTime(), isStarred: false });
+            newFolder.save(function(err, folder) {
+
+                if (!err) {
+
+                    fs.mkdir("./files/" + userdata.email + userdata.path + "/" + userdata.folderName, function(err) {
+                        if (err) {
                             res.code = 500;
                             res.msg = "New folder creation failed";
                             done(err, res);
+                        } else {
+                            res.code = 200;
+                            res.msg = "New folder created";
+                            done(null, res);
                         }
+                    });
 
-                    }, storeFileQuery, userdata.folderName, userdata.path, 1, result[0].id, new Date().getTime());
+                } else {
+                    res.code = 500;
+                    res.msg = "New folder creation failed";
+                    done(err, res);
                 }
-            });
 
+            });
         } else {
             res.code = 500;
-            res.msg = "New folder creation failed";
+            res.msg = "Unable to fetch user data.";
             done(err, res);
         }
 
-    }, checkUsernameQuery, userdata.email);
+    });
+   
 
 }
-
 function fileFolderDelete(userdata, done) {
 
     var res = {};
@@ -189,48 +237,73 @@ function fileFolderDelete(userdata, done) {
     }
     let name = path.substring(index + 1);
 
-    let deleteFileQuery = "delete from files where name = ? and path = ? and createdBy = ?";
-    mysql.deleteFile(function(r, err) {
-        if (!err) {
+    File.remove({ name: name, path: p, createdBy: userId }, function(err) {
 
-            if (isDirectory) {
+            if (!err) {
 
-                rmrf("./files/" + email + "/" + path, function(err) {
-                    if (err) {
-                        res.code = 500;
-                        res.msg = "Folder Deletion failed";
-                        done(err, res);
+                if (isDirectory) {
 
-                    } else {
-                        res.code = 200;
-                        res.msg = "Folder Deletion successful";
-                        done(null, res);
-                    }
-                });
+                    rmrf("./files/" + email + "/" + path, function(err) {
+                        if (err) {
+                            res.code = 500;
+                            res.msg = "Folder Deletion failed";
+                            done(err, res);
+
+                        } else {
+
+                            FileActivity.remove({'file.name': name, 'file.path':p, 'file.createdBy': userId}, function(err) {
+                                
+                                if(!err) {
+                                    
+                                    res.code = 200;
+                                    res.msg = "Folder Deletion successful";
+                                    done(null, res);
+                                }
+                                else {
+                                    res.code = 500;
+                                    res.msg = "Folder Deletion failed";
+                                    done(err, res);
+                                }
+                            });
+                    
+                        }
+                    });
+
+                } else {
+
+                    fs.unlink("./files/" + email + "/" + path, function(err) {
+                        if (err) {
+                            res.code = 500;
+                            res.msg = "File Deletion failed";
+                            done(err, res);
+                        } else {
+                             FileActivity.remove({'file.name': name, 'file.path':p, 'file.createdBy': userId}, function(err) {
+                                
+                                if(!err) {
+                                    
+                                    res.code = 200;
+                                    res.msg = "Folder Deletion successful";
+                                    done(null, res);
+                                }
+                                else {
+                                    res.code = 500;
+                                    res.msg = "Folder Deletion failed";
+                                    done(err, res);
+                                }
+                            });
+                        }
+                    });
+
+                }
 
             } else {
-
-                fs.unlink("./files/" + email + "/" + path, function(err) {
-                    if (err) {
-                        res.code = 500;
-                        res.msg = "File Deletion failed";
-                        done(err, res);
-                    } else {
-                        res.code = 200;
-                        res.msg = "File Deletion successful";
-                        done(null, res);
-                    }
-                });
-
+                res.code = 500;
+                res.msg = "Folder Deletion failed";
+                done(err, res);
             }
+        });
 
 
-        } else {
-            res.code = 500;
-            res.msg = "Folder Deletion failed";
-            done(err, res);
-        }
-    }, deleteFileQuery, name, p, userId);
 }
 
 function userStarredFiles(userdata, done) {
@@ -238,7 +311,9 @@ function userStarredFiles(userdata, done) {
     let userId = userdata.userId;
     var res = {};
     let starredFilesQuery = "select * from files where createdBy = ? and isStarred = ?";
-    mysql.getStarredFiles(function(result, err) {
+
+    File.find({ createdBy: userId, isStarred: true }, function(err, result) {
+
         if (!err) {
             let re = [];
             for (var i = 0; i < result.length; i++) {
@@ -248,8 +323,11 @@ function userStarredFiles(userdata, done) {
                 } else {
                     p = result[i].path + "/" + result[i].name
                 }
-
-                re.push({ fileId: result[i].id, starred: result[i].isStarred, path: p, isDirectory: result[i].isDirectory, name: result[i].name });
+                let st = 0;
+                if(result[i].isStarred) {
+                    st = 1;
+                }
+                re.push({ fileId: result[i].id, starred: st, path: p, isDirectory: result[i].isDirectory, name: result[i].name });
             }
             res.code = 200;
             res.starred = re;
@@ -260,7 +338,8 @@ function userStarredFiles(userdata, done) {
             done(err, res);
         }
 
-    }, starredFilesQuery, userId);
+    });
+
 }
 
 function userActivity(userdata, done) {
@@ -269,23 +348,29 @@ function userActivity(userdata, done) {
     var res = {};
     let userActivityQuery = "SELECT f.id as id, f.name as name, f.path as path , l.dateCreated as dateCreated, f.isDirectory as dir, f.isStarred as star FROM files f INNER JOIN fileactivity l on f.id = l.fileId where l.userId = ? order by l.dateCreated desc limit 7";
 
-    mysql.getUserActivity(function(result, err) {
-        if (!err) {
-            let files = [];
-            for (var i = 0; i < result.length; i++) {
+    var q = FileActivity.find({userId: userId}).sort({'dateCreated': -1}).limit(7);
+    q.exec(function(err, fileActivities) {
 
-                files.push({ name: result[i].name, path: result[i].path + result[i].name, starred: result[i].star, isDirectory: result[i].dir, fileId: result[i].id, date: result[i].dateCreated });
+        if(!err) {
+            let files = [];
+            for (var i = 0; i < fileActivities.length; i++) {
+
+                files.push({ name: fileActivities[i].file.name, path: fileActivities[i].file.path + fileActivities[i].file.name, starred: fileActivities[i].file.star, isDirectory: fileActivities[i].file.dir, fileId: fileActivities[i].file.id, date: fileActivities[i].file.dateCreated });
 
             }
             res.code = 200;
             res.activity = files;
             done(null, res);
-        } else {
-            res.code = 500;
+
+        }
+        else {
+             res.code = 500;
             res.msg = "Unable to get User Activity.";
             done(err, res);
         }
-    }, userActivityQuery, userId);
+         
+    });
+
 }
 
 function sharedFileLinks(userdata, done) {
@@ -347,49 +432,84 @@ function starFile(userdata, done) {
     }
     let name = p.substring(index + 1);
 
-    let starAFileQuery = "update files set isStarred = ? where createdBy = ? and name = ? and path = ?";
-    mysql.starFile(function(result, err) {
+    File.findOne({ name: name, path: path, createdBy: createdBy }, function(err, file) {
         if (!err) {
+            file.isStarred = isStarred;
+            file.save(function(err, updatedFile) {
 
-            let fileQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-            mysql.getUserFile(function(r, err) {
+                if (!err) {
+                    FileActivity.findOne({ fileId: updatedFile.id }, function(err, fileActivity) {
+                        console.log("id : "+err)
+                        if (!err) {
+                            if (fileActivity) {
+                                fileActivity.dateCreated = new Date().getTime();
+                                fileActivity.save(function(err) {
 
-                let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                mysql.checkFileActivity(function(rr, err) {
+                                    if (!err) {
+                                        if (isStarred) {
+                                            res.code = 200;
+                                            res.msg = "File/Fodler starred.";
+                                            done(null, res);
+                                        } else {
+                                            res.code = 200;
+                                            res.msg = "File/Fodler Unstarred.";
+                                            done(null, res);
+                                        }
+                                    } else {
+                                        res.code = 500;
+                                        res.msg = "Unable to star files.";
+                                        done(err, res);
+                                    }
+                                });
 
-                    if (!err) {
+                            } else {
 
-                        if (rr.length === 0) {
-                            let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                            mysql.addToFileActivity(function(err) {}, addToFileActivityQuery, createdBy, r[0].id);
+                                var newFileActivity = FileActivity({
+                                    userId: createdBy,
+                                    file: {id:file.id ,name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link},
+                                    dateCreated: new Date().getTime()
+                                });
+                                newFileActivity.save(function(err) {
+                                    if (!err) {
+                                        if (isStarred) {
+                                            res.code = 200;
+                                            res.msg = "File/Fodler starred.";
+                                            done(null, res);
+                                        } else {
+                                            res.code = 200;
+                                            res.msg = "File/Fodler Unstarred.";
+                                            done(null, res);
+                                        }
+                                    } else {
+                                        res.code = 500;
+                                        res.msg = "Unable to star files.";
+                                        done(err, res);
+                                    }
+                                });
+
+                            }
+
                         } else {
-
-                            let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                            mysql.addToFileActivity(function(err) {}, updateFileActivityQuery, createdBy, r[0].id);
+                            res.code = 500;
+                            res.msg = "Unable to fetch files.";
+                            done(err, res);
                         }
-                    }
-                }, checkFileActivityQuery, createdBy, r[0].id);
 
-            }, fileQuery, createdBy, name, path);
-
-
-            if (isStarred) {
-                res.code = 200;
-                res.msg = "File/Fodler starred.";
-                done(null, res);
-            } else {
-                res.code = 200;
-                res.msg = "File/Fodler Unstarred.";
-                done(null, res);
-            }
+                    });
+                } else {
+                    res.code = 500;
+                    res.msg = "Unable to star file/fodler.";
+                    done(err, res);
+                }
+            });
 
         } else {
             res.code = 500;
             res.msg = "Unable to star file/fodler.";
             done(err, res);
-
         }
-    }, starAFileQuery, isStarred, createdBy, name, path);
+
+    });
 
 }
 
@@ -547,74 +667,109 @@ function generateLink(userdata, done) {
     }
     let name = p.substring(index + 1);
 
-    let getUserQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
+    User.findOne({ email: email }, function(err, user) {
+
         if (!err) {
 
-            let userFilesQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-            mysql.getUserFile(function(r, err) {
+            File.findOne({ createdBy: user.id, name: name, path: path }, function(err, file) {
+
                 if (!err) {
 
-                    let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                    mysql.checkFileActivity(function(rr, err) {
+                    FileActivity.findOne({ userId: user.id, 'file.id': file.id }, function(err, fileActivity) {
 
-                        if (!err) {
+                        if (fileActivity) {
+                            fileActivity.dateCreated = new Date().getTime();
+                            fileActivity.save(function(err) {
 
-                            if (rr.length === 0) {
-                                let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                                mysql.addToFileActivity(function(err) {}, addToFileActivityQuery, result[0].id, r[0].id);
-                            } else {
+                                if (!err) {
+                                    FileLink.findOne({ fileId: file.id }, function(err, fileLink) {
 
-                                let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                                mysql.addToFileActivity(function(err) {}, updateFileActivityQuery, result[0].id, r[0].id);
-                            }
-                        }
-                    }, checkFileActivityQuery, result[0].id, r[0].id);
+                                        if (fileLink) {
 
-                    let checkLinkQuery = "select * from filelink where fileId = ?";
-                    mysql.getFileLink(function(rs, err) {
+                                            res.code = 200;
+                                            res.link = "http://localhost:3001/downloadSharedFile/" + fileLink.linkString;
+                                            done(null, res);
 
-                        if (!err) {
-                            if (rs.length > 0) {
-                                res.code = 200;
-                                res.link = "http://localhost:3001/downloadSharedFile/" + rs[0].linkString;
-                                done(null, res);
-                            } else {
-                                let generateLinkQuery = "insert into filelink(linkString, fileId, dateCreated, createdBy) values (?,?,?,?)";
-                                mysql.generateLink(function(token, err) {
+                                        } else {
 
-                                    if (!err) {
-                                        res.code = 200;
-                                        res.link = "http://localhost:3001/downloadSharedFile/" + token;
-                                        done(null, res);
-                                    } else {
-                                        res.code = 500;
-                                        res.msg = "Unable to Generate Link.";
-                                        done(err, res);
-                                    }
+                                            require('crypto').randomBytes(20, function(err, buffer) {
+                                                var token = buffer.toString('hex');
+                                                var newFileLink = FileLink({ linkString: token, fileId: file.id, createdBy: user.id, dateCreated: new Date().getTime() });
+                                                newFileLink.save(function(err) {
 
-                                }, generateLinkQuery, r[0].id, result[0].id);
-                            }
+                                                    res.code = 200;
+                                                    res.link = "http://localhost:3001/downloadSharedFile/" + token;
+                                                    done(null, res);
+                                                });
+
+                                            });
+
+                                        }
+                                    });
+                                } else {
+                                    res.code = 500;
+                                    res.msg = "Unable to Generate Link.";
+                                    done(err, res);
+                                }
+
+                            });
+
                         } else {
 
-                        }
-                    }, checkLinkQuery, r[0].id);
+                            var newFileActivity = FileActivity({
+                                userId: user.id,
+                                file: { id: file.id, name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link },
+                                dateCreated: new Date().getTime()
+                            });
+                            newFileActivity.save(function(err) {
 
+
+                                if (!err) {
+                                    FileLink.findOne({ fileId: file.id }, function(err, fileLink) {
+
+                                        if (fileLink) {
+
+                                            res.code = 200;
+                                            res.link = "http://localhost:3001/downloadSharedFile/" + fileLink.linkString;
+                                            done(null, res);
+
+                                        } else {
+
+                                            require('crypto').randomBytes(20, function(err, buffer) {
+                                                var token = buffer.toString('hex');
+                                                var newFileLink = FileLink({ linkString: token, fileId: file.id, createdBy: user.id, dateCreated: new Date().getTime() });
+                                                newFileLink.save(function(err) {
+
+                                                    res.code = 200;
+                                                    res.link = "http://localhost:3001/downloadSharedFile/" + token;
+                                                    done(null, res);
+                                                });
+
+                                            });
+
+                                        }
+                                    });
+                                }
+
+                            });
+
+                        }
+
+                    });
                 } else {
+
                     res.code = 500;
                     res.msg = "Unable to Generate Link.";
                     done(err, res);
                 }
-
-            }, userFilesQuery, result[0].id, name, path);
+            });
         } else {
+
             res.code = 500;
             res.msg = "Unable to Generate Link.";
-            done(err, res)
+            done(err, res);
         }
-
-    }, getUserQuery, email);
-
+    });
 }
 
 exports.listdir = listdir;

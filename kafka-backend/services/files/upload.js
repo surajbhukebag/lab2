@@ -2,6 +2,8 @@
 //var usermysql = require('./../mysql/userMysql_connectionpooled');
 var mysql = require('./../mysql/fileMysql');
 var usermysql = require('./../mysql/userMysql');
+var File = require('./../model/File');
+var User = require('./../model/User');
 
 var mime = require('mime-types');
 var fs = require("fs");
@@ -9,15 +11,25 @@ var fs = require("fs");
 function fileUpload(userdata, done) {
 
     var res = {};
-    let checkUsernameQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
+
+     User.findOne({ email: userdata.email }, function(err, user) {
+
         if (!err) {
-            let storeFileQuery = "insert into files (name, path, isDirectory, createdBy, dateCreated, isStarred, link) values (?,?,?,?,?,?,?)";
+
             require('crypto').randomBytes(20, function(err, buffer) {
                 var token = buffer.toString('hex');
-
-                mysql.storeFileDetails(function(rss, err, uid) {
-                    if (!err) {
+                var newFile = File({
+                                name: userdata.filename,
+                                path: userdata.path,
+                                isDirectory: false,
+                                createdBy: user.id,
+                                dateCreated: new Date().getTime(),
+                                isStarred: 0,
+                                link: token
+                            });
+                newFile.save(function(err, savedFile) {
+                
+                 if (!err) {
                         let p = "./files/" + userdata.email + userdata.path + "/" + userdata.filename;
                         if (userdata.path === '/') {
                             p = "./files/" + userdata.email + userdata.path + userdata.filename;
@@ -42,17 +54,17 @@ function fileUpload(userdata, done) {
                         done(err, res);
                     }
 
-                }, storeFileQuery, userdata.filename, userdata.path, 0, result[0].id, new Date().getTime(), token);
-
+                });
             });
-
+           
         } else {
             res.code = 500;
-            res.msg = "File Upload Failed";
+            res.msg = "Unable to access user data.Please try later.";
             done(err, res);
         }
 
-    }, checkUsernameQuery, userdata.email);
+    });
+
 }
 
 
