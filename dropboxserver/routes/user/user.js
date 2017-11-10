@@ -12,7 +12,7 @@ function signup(req, res) {
             res.send(JSON.stringify({ code: 500, msg: "User Signup failed with error : " + err }));
         } else {
             if (results.code == 200) {
-                res.send(JSON.stringify({ code: 200, userId: results.userId, msg: results.msg}));
+                res.send(JSON.stringify({ code: 200, userId: results.userId, msg: results.msg }));
 
             } else {
                 res.send(JSON.stringify({ code: 500, msg: results.msg }));
@@ -48,17 +48,17 @@ function userEduInfo(req, res) {
 
     kafka.make_request('userEduInfoTopic', {
         "email": req.param("email"),
-        college: req.param("college"),
-        major: req.param("major"),
-        sdate: req.param("sdate"),
-        edate: req.param("edate"),
-        gpa: req.param("gpa")
+        "college": req.param("college"),
+        "major": req.param("major"),
+        "sdate": req.param("sdate"),
+        "edate": req.param("edate"),
+        "gpa": req.param("gpa")
     }, function(err, results) {
         res.setHeader('Content-Type', 'application/json');
         if (err) {
             res.send(JSON.stringify({ code: 500, msg: results.msg }));
         } else {
-            res.send(JSON.stringify({ code: 200, eduinfo: { userId: results.userId, contact: results.contact, dob: results.dob, msg: results.msg } }));
+            res.send(JSON.stringify({ code: 200, eduinfo: { userId: results.userId, college: results.college, sdate: results.sdate, edate: results.edate, major: results.major, gpa: results.gpa, msg: results.msg } }));
         }
     });
 
@@ -72,9 +72,9 @@ function userIntInfo(req, res) {
         if (err) {
             res.send(JSON.stringify({ code: 500, msg: results.msg }));
         } else {
-            res.send(JSON.stringify({ code: 200, interests: results.interests}));
+            res.send(JSON.stringify({ code: 200, interests: results.interests }));
         }
-    });  
+    });
 
 }
 
