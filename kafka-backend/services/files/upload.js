@@ -3,7 +3,9 @@
 var mysql = require('./../mysql/fileMysql');
 var usermysql = require('./../mysql/userMysql');
 var File = require('./../model/File');
+var FileLink = require('./../model/FileLink');
 var User = require('./../model/User');
+var FileActivity = require('./../model/FileActivity');
 
 var mime = require('mime-types');
 var fs = require("fs");
@@ -71,24 +73,33 @@ function fileUpload(userdata, done) {
 function uploadfileToSharedFolder(userdata, done) {
 
     var res = {};
-    let userQuery = "select * from user where id = ?";
-    usermysql.getUserById(function(user, err) {
-        if (!err && user.length > 0) {
-            let ownerEmail = user[0].email;
 
-            let storeFileQuery = "insert into files (name, path, isDirectory, createdBy, dateCreated, isStarred, link) values (?,?,?,?,?,?,?)";
+    User.findOne({_id: userdata.owner}, function(err, user) {
+
+        if(!err) {
+            let ownerEmail = user.email;
+
             require('crypto').randomBytes(20, function(err, buffer) {
                 var token = buffer.toString('hex');
-
-                mysql.storeFileDetails(function(rss, err, uid) {
-                    if (!err) {
+                var newFile = File({
+                                name: userdata.filename,
+                                path: userdata.path,
+                                isDirectory: false,
+                                createdBy:  userdata.createdBy,
+                                dateCreated: new Date().getTime(),
+                                isStarred: 0,
+                                link: token
+                            });
+                newFile.save(function(err, savedFile) {
+                
+                 if (!err) {
                         let p = "./files/" + ownerEmail + userdata.path + "/" + userdata.filename;
                         if (userdata.path === '/') {
                             p = "./files/" + ownerEmail + userdata.path + userdata.filename;
                         }
-                        fs.appendFile(p, userdata.data, "utf8", function(err) {
+
+                        fs.appendFile(p, userdata.data, 'utf8', function(err) {
                             if (!err) {
-                                res.ownerEmail = ownerEmail;
                                 res.code = 200;
                                 res.msg = "File is uploaded";
                                 done(null, res);
@@ -106,16 +117,15 @@ function uploadfileToSharedFolder(userdata, done) {
                         done(err, res);
                     }
 
-                }, storeFileQuery, userdata.filename, userdata.path, 0, userdata.createdBy, new Date().getTime(), token);
-
+                });
             });
-
-        } else {
-            res.code = 500;
-            res.msg = "File Upload Failed";
-            done(err, res);
         }
-    }, userQuery, userdata.owner);
+        else {
+
+        }
+    });
+
+
 }
 
 function getDownloadLink(userdata, done) {
@@ -132,32 +142,34 @@ function getDownloadLink(userdata, done) {
     }
     let name = p.substring(index + 1);
 
-    let getUserQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
+    User.findOne({ email: email }, function(err, user) {
 
         if (!err) {
 
-            let userFilesQuery = "select * from files where createdBy = ? and name = ? and path = ?";
+            File.findOne({ createdBy: user.id, name: name, path: path }, function(err, file) {
 
-            mysql.getUserFile(function(r, err) {
                 if (!err) {
+
                     res.code = 200;
-                    res.link = "http://localhost:3001/filedownload/" + r[0].link;
+                    res.link = "http://localhost:3001/filedownload/" + file.link;
                     done(null, res);
+
                 } else {
+
                     res.code = 500;
                     res.msg = "Unable to fetch file data.";
                     done(err, res);
-                }
 
-            }, userFilesQuery, result[0].id, name, path);
+                }
+            });
         } else {
+
             res.code = 500;
             res.msg = "Download failed.";
             done(err, res);
-        }
 
-    }, getUserQuery, email);
+        }
+    });
 }
 
 function getSharedFileDownloadLink(userdata, done) {
@@ -174,20 +186,46 @@ function getSharedFileDownloadLink(userdata, done) {
     }
     let name = p.substring(index + 1);
 
-    let userFilesQuery = "select * from files where createdBy = ? and name = ? and path = ?";
+    File.findOne({ createdBy: userId, name: name, path: path }, function(err, file) {
 
-    mysql.getUserFile(function(r, err) {
         if (!err) {
+
             res.code = 200;
-            res.link = "http://localhost:3001/filedownload/" + r[0].link;
+            res.link = "http://localhost:3001/filedownload/" + file.link;
             done(null, res);
+
         } else {
+
             res.code = 500;
             res.msg = "Unable to fetch file data.";
             done(err, res);
+
+        }
+    });
+
+
+}
+
+function download(user, file, done, res) {
+
+    let filepath = "files/" + user.email + file.path + "/" + file.name;
+    if (file.path === '/') {
+        filepath = "files/" + user.email + file.path + file.name;
+    }
+    console.log(filepath);
+    fs.readFile(filepath, "utf8", function(err, data) {
+        if (!err) {
+            res.code = 200;
+            res.data = data;
+            res.mimeType = mime.lookup(filepath);
+            done(null, res);
+        } else {
+            res.code = 500;
+            res.msg = "Unable to download file.";
+            done(err, res);
         }
 
-    }, userFilesQuery, userId, name, path);
+    });
 
 }
 
@@ -195,133 +233,103 @@ function fileDownload(userdata, done) {
 
     var res = {};
     let filelink = userdata.link;
-    let fileQuery = "select * from files where link = ?";
-    mysql.getFileLink(function(file, err) {
+    
+    File.findOne({link: filelink}, function(err, file) {
 
-        let userQuery = "select * from user where id = ?";
-        usermysql.getUserById(function(user, err) {
+        if(!err) {
+            let userId = file.createdBy;
+
+            User.findOne({_id: userId}, function(err, user) {
+
+                FileActivity.findOne({ 'file.id': file.id }, function(err, fileActivity) {
+
+                         if (!err) {
+                             if (fileActivity) {
+                                 fileActivity.dateCreated = new Date().getTime();
+                                 fileActivity.save(function(err) {
+                                    if(!err) {
+                                        download(user, file, done, res);
+                                    }
+                                    else {
+                                        res.code = 500;
+                                        res.msg = "Unable to download file.";
+                                        done(err, res);
+                                    }
+                                 });
+
+                             } else {
+
+                                 var newFileActivity = FileActivity({
+                                     userId: createdBy,
+                                     file: {id:file.id ,name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link},
+                                     dateCreated: new Date().getTime()
+                                 });
+                                 newFileActivity.save(function(err) {
+                                     if(!err) {
+                                        download(user, file, done, res);
+                                    }
+                                    else {
+                                        res.code = 500;
+                                        res.msg = "Unable to download file.";
+                                        done(err, res);
+                                    }
+                                 });
+
+                             }
+
+                         } else {
+                             res.code = 500;
+                             res.msg = "Unable to fetch files.";
+                             done(err, res);
+                         }
+
+                });
+
+            });
+        }
+        else {
+               res.code = 500;
+                res.msg = "Unable to download file.";
+                done(err, res);
+        }
+
+    });
+
+
+  
+}
+
+function downloadSharedFile(userdata, done) {
+    var res = {};
+    let filelink = userdata.link;
+
+    FileLink.findOne({ linkString: filelink }, function(err, userfile) {
+
+        File.findOne({ _id: userfile.fileId }, function(err, file) {
 
             if (!err) {
+                let userId = file.createdBy;
 
-                let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                mysql.checkFileActivity(function(rr, err) {
+                User.findOne({ _id: userId }, function(err, user) {
+
                     if (!err) {
-
-                        if (rr.length === 0) {
-                            let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                            mysql.addToFileActivity(function(err) {
-
-
-                                let filepath = "files/" + user[0].email + file[0].path + "/" + file[0].name;
-                                if (file[0].path === '/') {
-                                    filepath = "files/" + user[0].email + file[0].path + file[0].name;
-                                }
-                                console.log(filepath);
-                                fs.readFile(filepath, "utf8", function(err, data) {
-                                    if (!err) {
-                                        res.code = 200;
-                                        res.data = data;
-                                        res.mimeType = mime.lookup(filepath);
-                                        done(null, res);
-                                    } else {
-                                        res.code = 500;
-                                        res.msg = "Unable to download file.";
-                                        done(err, res);
-                                    }
-
-                                });
-
-
-                            }, addToFileActivityQuery, user[0].id, file[0].id);
-                        } else {
-
-                            let filepath = "files/" + user[0].email + file[0].path + "/" + file[0].name;
-                            if (file[0].path === '/') {
-                                filepath = "files/" + user[0].email + file[0].path + file[0].name;
-                            }
-                            let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                            mysql.addToFileActivity(function(err) {
-
-                                fs.readFile(filepath, "utf8", function(err, data) {
-                                    if (!err) {
-                                        res.code = 200;
-                                        res.data = data;
-                                        res.mimeType = mime.lookup(filepath);
-                                        done(null, res);
-                                    } else {
-                                        res.code = 500;
-                                        res.msg = "Unable to download file.";
-                                        done(err, res);
-                                    }
-
-                                });
-
-                            }, updateFileActivityQuery, user[0].id, file[0].id);
-                        }
+                        download(user, file, done, res);
+                    } else {
+                        res.code = 500;
+                        res.msg = "Unable to download file.";
+                        done(err, res);
                     }
-                }, checkFileActivityQuery, user[0].id, file[0].id);
 
+                });
             } else {
                 res.code = 500;
                 res.msg = "Unable to download file.";
                 done(err, res);
             }
 
-        }, userQuery, file[0].createdBy);
+        });
 
-
-    }, fileQuery, filelink);
-}
-
-function downloadSharedFile(userdata, done) {
-    var res = {};
-    let filelink = userdata.link;
-    let fileQuery = "select * from filelink where linkString = ?";
-    mysql.getFileLink(function(f, err) {
-        let fileQuery = "select * from files where id = ?";
-        mysql.getFileLink(function(file, err) {
-
-            let userQuery = "select * from user where id = ?";
-            usermysql.getUserById(function(user, err) {
-                console.log("users : " + user)
-                if (!err) {
-                    let filepath = "";
-                    console.log("name : " + file[0].name);
-                    if (file[0].path === '/') {
-                        filepath = "files/" + user[0].email + file[0].path + file[0].name;
-                    } else {
-                        filepath = "files/" + user[0].email + file[0].path + "/" + file[0].name;
-                    }
-
-                    console.log("path : " + filepath);
-                    fs.readFile(filepath, "utf8", function(err, data) {
-                        if (!err) {
-                            res.code = 200;
-                            res.data = data;
-                            res.mimeType = mime.lookup(filepath);
-                            done(null, res);
-
-                        } else {
-
-                            res.code = 500;
-                            res.msg = "Unable to download file.";
-                            done(err, res);
-                        }
-
-                    });
-                } else {
-                    res.code = 500;
-                    res.msg = "Unable to download file.";
-                    done(err, res);
-                }
-
-            }, userQuery, file[0].createdBy);
-
-
-        }, fileQuery, f[0].fileId);
-
-
-    }, fileQuery, filelink);
+    });
 }
 
 exports.fileUpload = fileUpload;

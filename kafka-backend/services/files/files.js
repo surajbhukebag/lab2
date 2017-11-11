@@ -6,7 +6,7 @@ var File = require('./../model/File');
 var User = require('./../model/User');
 var FileActivity = require('./../model/FileActivity');
 var FileLink = require('./../model/FileLink');
-
+var SharedFile = require('./../model/SharedFile');
 
 var fs = require("fs");
 var rmrf = require('rimraf');
@@ -24,7 +24,7 @@ function listdir(userdata, done) {
 
              if (!err) {
 
-                 FileActivity.findOne({ fileId: file.id }, function(err, fileActivity) {
+                 FileActivity.findOne({ 'file.id': file.id }, function(err, fileActivity) {
 
                          if (!err) {
                              if (fileActivity) {
@@ -100,6 +100,7 @@ function listSharedDir(userdata, done) {
     let createdBy = userdata.id;
     let loggedInUser = userdata.user;
 
+    console.log("Created by : "+createdBy+" Loggedin user : "+loggedInUser+" Dir : "+dir)
     var res = {};
 
     if (dir !== '/' && dir.lastIndexOf('/') === 0) {
@@ -107,77 +108,78 @@ function listSharedDir(userdata, done) {
         let getFodlerQuery = "select * from files where createdBy = ? and name = ? and path = ?";
         File.findOne({ createdBy: createdBy, name: n, path: "/" }, function(err, file) {
 
-             if (!err) {
+            if (!err) {
 
-                 FileActivity.findOne({ userId: createdBy ,fileId: file.id }, function(err, fileActivity) {
+                FileActivity.findOne({ userId: createdBy, 'file.id': file.id }, function(err, fileActivity) {
 
-                         if (!err) {
-                             if (fileActivity) {
-                                 fileActivity.dateCreated = new Date().getTime();
-                                 fileActivity.save(function(err) {
+                    if (!err) {
+                        if (fileActivity) {
+                            fileActivity.dateCreated = new Date().getTime();
+                            fileActivity.save(function(err) {
 
-                                 });
+                            });
 
-                             } else {
+                        } else {
 
-                                 var newFileActivity = FileActivity({
-                                     userId: createdBy,
-                                     fileId: {name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link},
-                                     dateCreated: new Date().getTime()
-                                 });
-                                 fileActivity.save(function(err) {
+                            var newFileActivity = FileActivity({
+                                userId: createdBy,
+                                fileId: { name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link },
+                                dateCreated: new Date().getTime()
+                            });
+                            newFileActivity.save(function(err) {
 
-                                 });
+                            });
 
-                             }
+                        }
 
-                         } else {
-                             res.code = 500;
-                             res.msg = "Unable to fetch files.";
-                             done(err, res);
-                         }
+                    } else {
+                        res.code = 500;
+                        res.msg = "Unable to fetch files.";
+                        done(err, res);
+                    }
 
-                     });
-                 }
-                 else {
+                });
+            } else {
 
-                     res.code = 500;
-                     res.msg = "Unable to fetch files.";
-                     done(err, res);
-                 }
+                res.code = 500;
+                res.msg = "Unable to fetch files.";
+                done(err, res);
+            }
 
-             });
+        });
 
     }
 
-    let filesQuery = "select * from files where path = ? and (createdBy = ? or createdBy in (select sharedWith from sharedfiles where sharedBy = ?))";
-    mysql.getSharedFileList(function(files, err) {
+    SharedFile.find({ 'file.path': dir, $or: [{ sharedBy: createdBy, sharedWith: createdBy }] }, function(err, sharedFiles) {
 
         if (!err) {
+
             var result = [];
-            for (var i = 0; i < files.length; i++) {
+            for (var i = 0; i < sharedFiles.length; i++) {
                 let path = "";
-                if (files[i].path === '/') {
-                    path = files[i].path + files[i].name;
+                if (sharedFiles[i].file.path === '/') {
+                    path = sharedFiles[i].file.path + sharedFiles[i].file.name;
                 } else {
-                    path = files[i].path + "/" + files[i].name;
+                    path = sharedFiles[i].file.path + "/" + sharedFiles[i].file.name;
                 }
-                var link = "http://localhost:3001/fileDownload/"+files[i].link;
-                result.push({ link:link, owner: files[i].createdBy, fileId: files[i].id, path: path, isDirectory: files[i].isDirectory, name: files[i].name, starred: files[i].isStarred });
+                var link = "http://localhost:3001/fileDownload/" + sharedFiles[i].file.link;
+                result.push({ link: link, owner: sharedFiles[i].file.createdBy, fileId: sharedFiles[i].file.id, path: path, isDirectory: sharedFiles[i].file.isDirectory, name: sharedFiles[i].file.name, starred: sharedFiles[i].file.isStarred });
             }
             res.code = 200;
             res.files = result;
             done(null, res);
+
         } else {
+
             res.code = 500;
             res.msg = "Unable to fetch files.";
             done(err, res);
-        }
-    }, filesQuery, createdBy, dir);
 
+        }
+
+    });
 
 }
-
 function createFolder(userdata, done) {
 
     var res = {};
@@ -377,40 +379,64 @@ function sharedFileLinks(userdata, done) {
 
     let email = userdata.email;
     var res = {};
-    let getUserQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
+
+    User.findOne({ email: email }, function(err, user) {
+
         if (!err) {
-            let getSharedFileLinksQuery = "SELECT f.name as name, f.path as path , l.linkString as link FROM files f INNER JOIN filelink l on f.id = l.fileId where l.createdBy = ?"
-            mysql.getSharedLinkFiles(function(f, err) {
-
+            FileLink.find({ createdBy: user.id }, function(err, fileLinks) {
                 if (!err) {
-
+                    
                     let links = [];
+                    let sendRes = false;
+                    let cnt = 0;
+                    for (var i = 0; i < fileLinks.length; i++) {
 
-                    for (var i = 0; i < f.length; i++) {
+                        let l = fileLinks[i].linkString;
 
-                        links.push({ name: f[i].name, path: f[i].path + f[i].name, link: "http://localhost:3001/downloadSharedFile/" + f[i].link, owner: result[0].id });
+                        File.findOne({ _id: fileLinks[i].fileId }, function(err, file) {
+
+                            if(cnt == fileLinks.length-1) {
+                                sendRes = true;
+                             }
+                             else {
+                                cnt++;
+                             }
+                            if (!err) {
+
+                                links.push({ name: file.name, path: file.path + file.name, link: "http://localhost:3001/downloadSharedFile/" + l, owner: user.id });
+                                console.log("ss : "+sendRes)
+                                if (sendRes) {
+                                    res.code = 200;
+                                    res.msg = "Retrieved shared data.";
+                                    res.links = links;
+                                    done(null, res);
+                                }
+                            } else {
+                                res.code = 500;
+                                res.msg = "Unable to Retrieve shared link data.";
+                                done(err, res);
+                            }
+
+                        });
+
 
                     }
-                    res.code = 200;
-                    res.msg = "Retrieved shared data.";
-                    res.links = links;
-                    done(null, res);
+
+
                 } else {
                     res.code = 500;
-                    res.msg = "Unable to Retrieve shared data.";
+                    res.msg = "Unable to Retrieve shared link data.";
                     done(err, res);
                 }
-
-            }, getSharedFileLinksQuery, result[0].id);
-
+            });
         } else {
             res.code = 500;
             res.msg = "Unable to Retrieve shared link data.";
             done(err, res);
         }
 
-    }, getUserQuery, email);
+    });
+
 }
 
 function starFile(userdata, done) {
@@ -438,7 +464,7 @@ function starFile(userdata, done) {
             file.save(function(err, updatedFile) {
 
                 if (!err) {
-                    FileActivity.findOne({ fileId: updatedFile.id }, function(err, fileActivity) {
+                    FileActivity.findOne({ 'file.id': updatedFile.id }, function(err, fileActivity) {
                         console.log("id : "+err)
                         if (!err) {
                             if (fileActivity) {
@@ -517,50 +543,53 @@ function sharedFiles(userdata, done) {
 
     let email = userdata.email;
     var res = {};
-    let getUserQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
-        if (!err) {
 
-            let sharedFilesQuery = "select * from files where id in (select fileId from sharedfiles where sharedBy = ? or sharedWith = ?)";
-            mysql.getSharedFiles(function(f, err) {
+    User.findOne({ email: email }, function(err, user) {
+            if (!err) {
 
-                if (!err) {
+                SharedFile.find({$or: [{ sharedBy: user.id }, { sharedWith: user.id }]},
+                        function(err, sharedFiles) {
 
-                    let files = [],
-                        folders = [],
-                        links = [];
+                            if (!err) {
 
-                    for (var i = 0; i < f.length; i++) {
+                                let files = [],
+                                    folders = [];
 
-                        if (f[i].isDirectory) {
-                            folders.push({ name: f[i].name, path: f[i].path + f[i].name, owner: f[i].createdBy, isStarred: f[i].isStarred, isDirectory: true });
-                        } else {
-                            files.push({ name: f[i].name, link: "http://localhost:3001/fileDownload/" + f[i].link, path: f[i].path + f[i].name, owner: f[i].createdBy, isStarred: f[i].isStarred, isDirectory: false });
-                        }
+                                for (var i = 0; i < sharedFiles.length; i++) {
 
-                    }
-                    res.code = 200;
-                    res.msg = "Retrieved shared data.";
-                    res.files = files;
-                    res.folders = folders;
-                    done(null, res);
-                } else {
+                                    if (sharedFiles[i].file.isDirectory) {
+                                        folders.push({ name: sharedFiles[i].file.name, path: sharedFiles[i].file.path + sharedFiles[i].file.name, owner: sharedFiles[i].file.createdBy, isStarred: sharedFiles[i].file.isStarred, isDirectory: true });
+                                    } else {
+                                        files.push({ name: sharedFiles[i].file.name, link: "http://localhost:3001/fileDownload/" + sharedFiles[i].file.link, path: sharedFiles[i].file.path + sharedFiles[i].file.name, owner: sharedFiles[i].file.createdBy, isStarred: sharedFiles[i].file.isStarred, isDirectory: false });
+                                    }
+
+                                }
+                                res.code = 200;
+                                res.msg = "Retrieved shared data.";
+                                res.files = files;
+                                res.folders = folders;
+                                console.log("kkkk"+res);
+                                done(null, res);
+
+                            } else {
+                                res.code = 500;
+                                res.msg = "Unable to Retrieve shared data.";
+                                done(err, res);
+                            }
+
+                        });
+
+                }
+                else {
                     res.code = 500;
                     res.msg = "Unable to Retrieve shared data.";
                     done(err, res);
+
                 }
 
-            }, sharedFilesQuery, result[0].id);
+            });
 
-        } else {
-            res.code = 500;
-            res.msg = "Unable to Retrieve shared data.";
-            done(err, res);
-        }
-
-    }, getUserQuery, email);
-
-}
+    }
 
 function share(userdata, done) {
 
@@ -586,71 +615,133 @@ function share(userdata, done) {
         sharedWithList.push(shareListString.trim());
     }
 
-    let getUserQuery = "select * from user where email = ?";
-    usermysql.getUser(function(uniqueUsername, err, result) {
+    User.findOne({ email: email }, function(err, user) {
+
         if (!err) {
-            let uid = result[0].id;
-            let fileQuery = "select * from files where createdBy = ? and name = ? and path = ?";
-            mysql.getUserFile(function(r, err) {
+            let uid = user.id;
+            File.findOne({ name: name, path: path, createdBy: uid }, function(err, file) {
+
                 if (!err) {
-                    let fileId = r[0].id;
-                    let shareFileQuery = "insert into sharedfiles (fileId, sharedBy, sharedWith, dateCreated) values (?, ?, ?, ?)";
+                    let sendRes = false;
                     for (var i = 0; i < sharedWithList.length; i++) {
-                        usermysql.getUser(function(uniqueUsername, err, sharedWith) {
-                            console.log("ssss : " + sharedWith.length);
-                            if (!err && sharedWith.length !== 0) {
+                        if(i == sharedWithList.length-1) {
+                            sendRes = true;
+                        }
+                        User.findOne({ email: sharedWithList[i] }, function(err, sharedWithUser) {
 
-                                let checkFileActivityQuery = "select * from fileactivity where userId = ? and fileId = ?";
-                                mysql.checkFileActivity(function(rr, err) {
-
+                            if (!err) {
+                                console.log("ii : "+i);
+                                FileActivity.findOne({ 'file.id': file.id }, function(err, fileActivity) {
+                                    
                                     if (!err) {
+                                        if (fileActivity) {
+                                            fileActivity.dateCreated = new Date().getTime();
+                                            fileActivity.save(function(err) {
 
-                                        if (rr.length === 0) {
-                                            let addToFileActivityQuery = "insert into fileactivity (dateCreated, userId, fileId) values (?,?,?)";
-                                            mysql.addToFileActivity(function(err) {}, addToFileActivityQuery, uid, fileId);
+                                                if (err) {
+                                                    res.code = 500;
+                                                    res.msg = "Unable to share files.";
+                                                    done(err, res);
+                                                }
+                                                else {
+                                                    saveShareFile(file, done, sharedWithUser, uid, i, sharedWithList, sendRes, res );
+                                                }
+                                            });
+
                                         } else {
 
-                                            let updateFileActivityQuery = "update fileactivity set dateCreated = ? where userId = ? and fileId = ?";
-                                            mysql.addToFileActivity(function(err) {}, updateFileActivityQuery, uid, fileId);
+                                            var newFileActivity = FileActivity({
+                                                userId: uid,
+                                                file: { id: file.id, name: file.name, path: file.path, isDirectory: file.isDirectory, createdBy: file.createdBy, dateCreated: file.dateCreated, isStarred: file.isStarred, link: file.link },
+                                                dateCreated: new Date().getTime()
+                                            });
+                                            newFileActivity.save(function(err) {
+                                                if (err) {
+                                                    res.code = 500;
+                                                    res.msg = "Unable to share files.";
+                                                    done(err, res);
+                                                }
+                                                 else {
+                                                    saveShareFile(file, done, sharedWithUser, uid, i, sharedWithList, sendRes, res );
+                                                }
+                                            });
+
                                         }
-                                    }
-                                }, checkFileActivityQuery, uid, fileId);
 
-
-                                mysql.createSharedFile(function(succ, err) {
-                                    if (!err) {
-                                        res.code = 200;
-                                        res.msg = "File/Folder is shared";
-                                        done(null, res);
                                     } else {
                                         res.code = 500;
-                                        res.msg = "Share file/folder failed.";
+                                        res.msg = "Unable to fetch files.";
                                         done(err, res);
                                     }
 
-                                }, shareFileQuery, fileId, uid, sharedWith[0].id);
+                                });
 
 
+  
                             } else {
+
                                 res.code = 500;
                                 res.msg = "Share file/folder failed.";
                                 done(err, res);
+
                             }
-                        }, getUserQuery, sharedWithList[i]);
+
+                        });
                     }
                 } else {
                     res.code = 500;
                     res.msg = "Share file/folder failed.";
                     done(err, res);
                 }
-            }, fileQuery, uid, name, path);
+
+            });
+
         } else {
+
             res.code = 500;
             res.msg = "Share file/folder failed.";
             done(err, res);
-        }
-    }, getUserQuery, email);
 
+        }
+    });
+}
+
+function saveShareFile(file, done, sharedWithUser, uid, i, sharedWithList, sendRes, res ) {
+
+      var sharedFile = SharedFile({
+        file: {
+            id: file.id,
+            name: file.name,
+            path: file.path,
+            isDirectory: file.isDirectory,
+            createdBy: file.createdBy,
+            dateCreated: file.dateCreated,
+            isStarred: file.isStarred,
+            link: file.link
+        },
+        sharedBy: uid,
+        sharedWith: sharedWithUser.id,
+        dateCreated: new Date().getTime()
+    });
+
+    sharedFile.save(function(err) {
+        
+        if (!err) {
+            
+            if (sendRes) {
+                res.code = 200;
+                res.msg = "File/Folder is shared";
+                done(null, res);
+            }
+
+        } else {
+
+            res.code = 500;
+            res.msg = "Share file/folder failed.";
+            done(err, res);
+
+        }
+    });
 }
 
 function generateLink(userdata, done) {
