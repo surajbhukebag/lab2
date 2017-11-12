@@ -7,6 +7,8 @@ var User = require('./../model/User');
 var FileActivity = require('./../model/FileActivity');
 var FileLink = require('./../model/FileLink');
 var SharedFile = require('./../model/SharedFile');
+var LifeEvents = require('./../model/LifeEvents');
+var Groups = require('./../model/Groups');
 
 var fs = require("fs");
 var rmrf = require('rimraf');
@@ -863,6 +865,102 @@ function generateLink(userdata, done) {
     });
 }
 
+
+function userGroups(userdata, done) {
+
+    let email = userdata.email;
+    var res = {};
+
+    User.findOne({email: email}, function(err, user) {
+
+        if(!err) {
+
+            let userId = user.id;
+
+            Groups.find({createdBy: userId}, function(err, groups) {
+
+                if(!err) {
+                    let resGroups = [];
+                    for(var i = 0; i < groups.length; i++) {
+                        resGroups.push({groupId: groups[i].id, groupName: groups[i].name});
+                    }
+                    res.code = 200;
+                    res.groups = resGroups;
+                    done(null, res);
+                }
+                else {
+                    res.code = 500;
+                    res.msg = "Unable to get groups.";
+                    done(err, res);   
+                }
+
+            });
+
+        }
+        else {
+            res.code = 500;
+            res.msg = "Unable to get groups.";
+            done(err, res);
+        }
+    });
+}
+
+function createGroup(userdata, done) {
+
+    let res = {};
+    let createdBy = userdata.userId;
+    let name = userdata.name
+    let members = userdata.members.split(",");
+    let sendRes = false;
+    let users = [];
+    let cnt = 0;
+    for (var i = 0; i < members.length; i++) {
+
+        users.push({ member: members[i].trim() });
+
+    }
+
+    var group = Groups({
+        name: name,
+        createdBy: createdBy,
+        members: users
+    });
+    console.log("kj")
+    group.save(function(err, savedGrp) {
+        console.log("kjllll" + err)
+        if (!err) {
+            res.code = 200;
+            res.msg = "New group created.";
+            done(null, res);
+
+        } else {
+            res.code = 500;
+            res.msg = "Unable to create group.";
+            done(err, res);
+
+        }
+    });
+}
+
+function lifeEvents(userdata, done) {
+
+    let userId = userdata.userId;
+    var res = {};
+    LifeEvents.findOne({ userId: userId }, function(err, lifeEvent) {
+        
+        if (!err) {
+            console.log("dd : "+lifeEvent)
+            res.code = 200;
+            res.events = lifeEvent;
+            done(null, res);
+        } else {
+            res.code = 500;
+            res.msg = "Unable to retrieve events data.";
+            done(err, res);
+        }
+    });
+}
+
 exports.listdir = listdir;
 exports.listSharedDir = listSharedDir;
 exports.createFolder = createFolder;
@@ -874,3 +972,6 @@ exports.starFile = starFile;
 exports.sharedFiles = sharedFiles;
 exports.share = share;
 exports.generateLink = generateLink;
+exports.userGroups = userGroups;
+exports.createGroup = createGroup;
+exports.lifeEvents = lifeEvents;

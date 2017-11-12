@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var lifeEventsSchema = new Schema({
-    userId: Number,
+    userId: String,
     fileCount: Number,
     fodlerCount: Number,
     downloadCOunt: Number,

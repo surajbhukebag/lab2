@@ -80,5 +80,16 @@ sharedFileLinksConsumer.on('message', function (message) { fileTopics.sharedFile
 var userActivityConsumer = connection.getConsumer("userActivityTopic");
 userActivityConsumer.on('message', function (message) { fileTopics.userActivity(message, producer); });
 
+var userGroupsConsumer = connection.getConsumer("userGroupsTopic");
+userGroupsConsumer.on('message', function (message) { fileTopics.userGroups(message, producer); });
+
+var createGroupConsumer = connection.getConsumer("createGroupTopic");
+createGroupConsumer.on('message', function (message) { fileTopics.createGroup(message, producer); });
+
+
+var lifeEventsConsumer = connection.getConsumer("lifeEventsTopic");
+lifeEventsConsumer.on('message', function (message) { fileTopics.lifeEvents(message, producer); });
+
+
 
 console.log('server is running');

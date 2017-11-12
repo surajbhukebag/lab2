@@ -341,6 +341,70 @@ function userActivity(message, producer) {
     });
 }
 
+function userGroups(message, producer) {
+
+      var data = JSON.parse(message.value);
+    filesClient.userGroups(data.data, function(err, res) {
+        
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
+}
+
+function createGroup(message, producer) {
+
+      var data = JSON.parse(message.value);
+    filesClient.createGroup(data.data, function(err, res) {
+        
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
+}
+
+function lifeEvents(message, producer) {
+
+      var data = JSON.parse(message.value);
+    filesClient.lifeEvents(data.data, function(err, res) {
+        
+        var payloads = [{
+            topic: data.replyTo,
+            messages: JSON.stringify({
+                correlationId: data.correlationId,
+                data: res
+            }),
+            partition: 0
+        }];
+        producer.send(payloads, function(err, data) {
+            console.log(data);
+        });
+        return;
+    });
+
+
+}
+
 exports.listdir = listdir;
 exports.listSharedDir = listSharedDir;
 exports.fileupload = fileupload;
@@ -358,3 +422,6 @@ exports.share = share;
 exports.sharedFiles = sharedFiles;
 exports.sharedFileLinks = sharedFileLinks;
 exports.userActivity = userActivity;
+exports.userGroups = userGroups;
+exports.createGroup = createGroup;
+exports.lifeEvents = lifeEvents;
