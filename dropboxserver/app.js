@@ -17,7 +17,7 @@ var express = require('express')
 
 var app = express();
 
-var mongoSessionURL = "mongodb://localhost:27017/sessions";
+var mongoSessionURL = "mongodb://localhost:27017/dropbox";
 var expressSessions = require("express-session");
 var mongoStore = require("connect-mongo/es5")(expressSessions);
 

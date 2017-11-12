@@ -2,6 +2,18 @@ var LocalStrategy = require("passport-local").Strategy;
 var kafka = require("./../kafka/client");
 
 module.exports = function(passport) {
+
+    passport.serializeUser(function(user, done) {
+        console.log("serializeUser : "+ user.username);
+        done(null, user.id);
+
+    });
+
+    passport.deserializeUser(function(id, done) {
+
+        console.log("deserializeUser L: "+id);
+    });
+
     
     passport.use('local-login', new LocalStrategy({usernameField: 'email'}, function(email, password, done) {
         var res = {};
