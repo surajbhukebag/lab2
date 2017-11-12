@@ -152,6 +152,47 @@ function userActivity(req, res) {
 
 }
 
+
+function userGroups(req, res) {
+
+ kafka.make_request('userGroupsTopic', { "email": req.param("email") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+            res.send(JSON.stringify({ code: 500, msg: results.msg }));
+        } else {
+            res.send(JSON.stringify({ code: 200, groups: results.groups }));
+        }
+    });    
+}
+
+function createGroup(req, res) {
+
+     kafka.make_request('createGroupTopic', { "userId": req.param("userId"), "name":req.param("name"), "members":req.param("members") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+            res.send(JSON.stringify({ code: 500, msg: results.msg }));
+        } else {
+            res.send(JSON.stringify({ code: 200, msg: results.msg }));
+        }
+    });   
+}
+
+
+function lifeEvents(req, res) {
+
+    kafka.make_request('lifeEventsTopic', { "userId": req.param("userId") }, function(err, results) {
+        res.setHeader('Content-Type', 'application/json');
+        if (err) {
+            res.send(JSON.stringify({ code: 500, msg: results.msg }));
+        } else {
+            res.send(JSON.stringify({ code: 200, events: results.events }));
+        }
+    });
+
+}
+
+
+exports.userGroups = userGroups;
 exports.listdir = listdir;
 exports.createFolder = createFolder;
 exports.fileFolderDelete = fileFolderDelete;
@@ -163,3 +204,5 @@ exports.sharedFileLinks = sharedFileLinks;
 exports.starAFile = starAFile;
 exports.userActivity = userActivity;
 exports.listSharedDir = listSharedDir;
+exports.createGroup = createGroup;
+exports.lifeEvents = lifeEvents;

@@ -118,6 +118,10 @@ app.post('/share',cors(corsOptions), isAtuthenticated, files.share);
 app.post('/sharedFiles',cors(corsOptions), isAtuthenticated, files.sharedFiles);
 app.post('/sharedFileLinks',cors(corsOptions), isAtuthenticated, files.sharedFileLinks);
 app.get('/userActivity/:userId', cors(corsOptions), isAtuthenticated, files.userActivity);
+app.post('/userGroups', cors(corsOptions), isAtuthenticated, files.userGroups);
+app.post('/group', cors(corsOptions), isAtuthenticated, files.createGroup);
+
+app.get('/lifeEvents/:userId', cors(corsOptions), isAtuthenticated, files.lifeEvents);
 
 
 var server = http.createServer(app).listen(app.get('port'), function(){
