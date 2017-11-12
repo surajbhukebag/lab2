@@ -248,3 +248,60 @@ export const listSharedDir = (payload) =>
             console.log("List shared file failed");
             return error;
     });
+
+export const userGroups = (payload) =>  
+    fetch(`${api}/userGroups`, {
+        method: 'POST',
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        credentials:'include',
+        body: JSON.stringify(payload)
+    }).then((response) => response.json())
+
+    .then((responseJson) => {
+        return responseJson;
+    })
+        .catch(error => {
+            console.log("Get userGroups failed");
+            return error;
+    });
+
+export const group = (payload) =>  
+    fetch(`${api}/group`, {
+        method: 'POST',
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        credentials:'include',
+        body: JSON.stringify(payload)
+    }).then((response) => response.json())
+
+    .then((responseJson) => {
+        return responseJson;
+    })
+        .catch(error => {
+            console.log("Create userGroups failed");
+            return error;
+    });
+
+        
+export const lifeEvents = (payload) =>  
+    fetch(`${api}/lifeEvents/`+payload, {
+        method: 'GET',
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        credentials:'include'
+    }).then((response) => response.json())
+
+    .then((responseJson) => {
+        return responseJson;
+    })
+        .catch(error => {
+            console.log("Get lifeEvents failed");
+            return error;
+    });

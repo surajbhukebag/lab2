@@ -8,6 +8,7 @@ export const FILE_SHARE = "FILE_SHARE";
 export const FILE_SHARE_LIST = "FILE_SHARE_LIST";
 export const FILE_STAR = "FILE_STAR";
 export const FOLDER_SHARE_LIST = "FOLDER_SHARE_LIST";
+export const USER_GROUPS = "USER_GROUPS";
 
 
 export function listfiles(dir, email, msg) {
@@ -257,5 +258,51 @@ export function uploadToSharedFolder(data, sharedDir, sharedDirOwner, userId) {
 				    	}
 	      		});
 	  	};	
+
+}
+
+export function getGroups(email) {
+
+	let data = {email: email}
+
+	return function(dispatch) {
+		return  API.userGroups(data)
+			    	.then((resData) => {
+			    		if(resData.code === 502) {
+			    			dispatch(invalidSession()); 
+			    		}
+			    		else {			    			
+				        	dispatch(userGroupData(resData)); 
+				    	}
+	      		});
+	  	};	
+
+	
+}
+
+function userGroupData(resData) {
+	return {
+		type: USER_GROUPS,
+		groups: resData.groups
+	}
+}
+
+export function createGroup(data, userId) {
+
+	let req = {userId: userId, name: data.groupName, members: data.members};
+
+	return function(dispatch) {
+		return  API.group(req)
+			    	.then((resData) => {
+			    		if(resData.code === 502) {
+			    			dispatch(invalidSession()); 
+			    		}
+			    		else {			    			
+				        	dispatch(getGroups(data.email)); 
+				    	}
+	      		});
+	  	};	
+
+
 
 }

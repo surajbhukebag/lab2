@@ -1,4 +1,4 @@
-import {LIST_FILES, FILE_LINK, FILE_SHARE, FILE_SHARE_LIST, FOLDER_SHARE_LIST} from "../actions/files";
+import {LIST_FILES, FILE_LINK, FILE_SHARE, FILE_SHARE_LIST, FOLDER_SHARE_LIST, USER_GROUPS} from "../actions/files";
 import {USER_SIGNOUT} from "../actions/useractions";
 
 const initialState = {
@@ -111,6 +111,19 @@ const files = (state = initialState, action) => {
                         "sharedfolders" : action.folders,
                         "sharedDir" : action.sharedDir,
                         "sharedDirOwner" : action.sharedDirOwner
+                    }               
+            };
+           
+            break;
+
+             case USER_GROUPS :
+
+       
+            return {
+              ...state,
+                   "files":{
+                        ...state.files,
+                        "groups" : action.groups
                     }               
             };
            

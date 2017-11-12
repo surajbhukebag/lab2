@@ -3,6 +3,8 @@ import { Button, Collapse, Navbar, NavbarToggler, NavbarBrand, Nav, NavItem, Nav
 import { TabContent, TabPane, Card, CardTitle, CardText, Row, Col } from 'reactstrap';
 import classnames from 'classnames';
 import text from './../images/1.svg';
+import { Route, withRouter } from 'react-router-dom';
+import {connect} from 'react-redux';
 import logo from './../images/2.svg';
 import UserPersonalInfo from './UserPersonalInfo';
 import UserEducation from './UserEducation';
@@ -10,7 +12,7 @@ import UserInterest from './UserInterest';
 import Item from './Item';
 import PieChart from "react-svg-piechart"
 
-export default class UserSettingsHome extends React.Component {
+class UserSettingsHome extends React.Component {
 
     constructor(props) {
     super(props);
@@ -38,13 +40,23 @@ export default class UserSettingsHome extends React.Component {
 
   render() {
 
-    const data = [
-            {label: "Facebook", value: 100, color: "#3b5998"},
-            {label: "Twitter", value: 60, color: "#00aced"},
-            {label: "Google Plus", value: 30, color: "#dd4b39"},
-            {label: "Pinterest", value: 20, color: "#80ffdf"},
-            {label: "Linked In", value: 10, color: "#ccb3ff"},
+    let data = [
+            {label: "File Count", value: 100, color: "#3b5998"},
+            {label: "Folder Count", value: 60, color: "#00aced"},
+            {label: "Download Count", value: 30, color: "#dd4b39"},
+            {label: "Share Link Count", value: 20, color: "#80ffdf"},
+            {label: "Share File/Folder Count", value: 10, color: "#ccb3ff"},
         ]
+
+    if(this.props.events !== undefined) {
+      data = [
+          {label: "File Count", value: this.props.events.fileCount, color: "#3b5998"},
+            {label: "Folder Count", value: this.props.events.fodlerCount, color: "#00aced"},
+            {label: "Download Count", value: this.props.events.downloadCOunt, color: "#dd4b39"},
+            {label: "Share Link Count", value: this.props.events.shareLinkCount, color: "#80ffdf"},
+            {label: "Share File/Folder Count", value: this.props.events.shareFileFolderCount, color: "#ccb3ff"},
+        ]
+    }
     const {expandedSector} = this.state
     return (
       <div className="pt-5">       
@@ -158,3 +170,13 @@ export default class UserSettingsHome extends React.Component {
     );
   }
 }
+
+function mapStateToProps(user) {
+  if(user.user.user.events != null) {
+      const events = user.user.user.events;
+      return {events};
+  }
+    
+}
+
+export default withRouter(connect(mapStateToProps, null) (UserSettingsHome));

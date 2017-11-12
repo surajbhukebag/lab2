@@ -4,6 +4,7 @@ import text from './../images/1.svg';
 import logo from './../images/2.svg';
 import {listfiles} from "../actions/files";
 import {getSharedfiles} from "../actions/files";
+import {getGroups} from "../actions/files";
 import {getStarredfilesAndActivity} from "../actions/useractions";
 import { Route, withRouter, Link } from 'react-router-dom';
 import {connect} from 'react-redux';
@@ -33,6 +34,9 @@ class HomeLeftNav extends React.Component {
           <NavItem>
             <br/>
           </NavItem>
+          <NavItem>
+            <Link to="/groups" onClick={() => {this.props.getGroups(this.props.email)}}>Groups</Link>
+          </NavItem>
          
         </Nav>       
       </div>
@@ -44,6 +48,7 @@ function mapDispatchToProps(dispatch) {
     return {
         getListfiles : (data, email) => dispatch(listfiles(data, email)),
         getSharedfiles : (email) => dispatch(getSharedfiles(email)),
+        getGroups : (email) => dispatch(getGroups(email)),
         getStarredfilesAndActivity : (userId) => dispatch(getStarredfilesAndActivity(userId))
     };
 }

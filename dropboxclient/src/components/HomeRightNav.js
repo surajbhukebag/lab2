@@ -8,6 +8,8 @@ import { Link } from 'react-router-dom';
 import {fileUpload} from "../actions/files";
 import {signout} from "../actions/useractions";
 import NewFolder from "./NewFolder";
+import NewGroup from "./NewGroup";
+
 
 class HomeRightNav extends React.Component {
 
@@ -76,6 +78,10 @@ class HomeRightNav extends React.Component {
               </NavItem>
                <NavItem>
                 <NavLink href="#"><NewFolder buttonLabel="Create Folder"/></NavLink>
+              </NavItem>
+
+               <NavItem>
+                <NavLink href="#"><NewGroup buttonLabel="Create Group"/></NavLink>
               </NavItem>
  
            </Nav>       

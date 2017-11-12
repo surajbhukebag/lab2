@@ -48,7 +48,8 @@ const user = (state = initialState, action) => {
                                 "loggedin" : true,
                                 "interests" : action.interests,
                                 "starred" : action.starred,
-                                "activity" : action.activity                                
+                                "activity" : action.activity,
+                                "events" : action.events                                
                             }
                     };
 

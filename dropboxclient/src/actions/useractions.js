@@ -65,7 +65,16 @@ export function userSignin(userDeails) {
 										    			dispatch(invalidSession()); 
 										    		}
 										    		else {
-											        	dispatch(updateSigninUserData(resData, rData, actData)); 						        	
+											        	//dispatch(updateSigninUserData(resData, rData, actData));
+											        	FAPI.lifeEvents(resData.user.id)
+													    	.then((eventData) => {
+													    		if(resData.code === 502) {
+													    			dispatch(invalidSession()); 
+													    		}
+													    		else {
+														        	dispatch(updateSigninUserData(resData, rData, actData, eventData)); 						        	
+														    	}
+												  		});	 						        	
 											    	}
 									  		});	
 								    	}
@@ -95,8 +104,9 @@ function invalidSignin(resData) {
 }
 						
 
-export function updateSigninUserData(resData, rData, actData) {
+export function updateSigninUserData(resData, rData, actData, eventData) {
 
+	console.log("dddddd "+eventData.code)
 	
 	if(resData.code === 200) {
 		return {
@@ -106,7 +116,8 @@ export function updateSigninUserData(resData, rData, actData) {
 			eduinfo: resData.eduinfo,
 			interests: resData.interests,
 			starred: rData.starred,
-			activity: actData.activity
+			activity: actData.activity,
+			events: eventData.events
 		}
 	}
 	else {
