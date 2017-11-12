@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
 
-mongoose.connect("mongodb://localhost:27017/dropbox");
+//mongoose.connect("mongodb://localhost:27017/dropbox");
 
 var Schema = mongoose.Schema;
 

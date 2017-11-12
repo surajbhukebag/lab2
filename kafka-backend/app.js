@@ -1,6 +1,13 @@
 var connection =  new require('./kafka/connection');
 var userTopics = require('./topics/userTopics');
 var fileTopics = require('./topics/fileTopics');
+var mongoose = require('mongoose');
+
+var options = {
+  poolSize: 10
+ }
+
+mongoose.connect("mongodb://localhost:27017/dropbox", options);
 
 var producer = connection.getProducer();
 
