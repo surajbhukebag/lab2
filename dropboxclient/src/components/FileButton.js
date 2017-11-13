@@ -96,7 +96,7 @@ class FileButton extends React.Component {
            
                  <br/>
                  <div className="row">
-                  <div className="col-md-4"><Button color="primary" onClick={() => {this.handleShareClick()}}>Share By Email or Name</Button></div>
+                  <div className="col-md-4"><Button color="primary" onClick={() => {this.handleShareClick()}}>Share By Email or Name or Group</Button></div>
                   </div>
                   <br/>
                  <div className="row">
