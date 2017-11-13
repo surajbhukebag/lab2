@@ -1,6 +1,6 @@
 var fs = require('fs');
 var bcrypt = require('bcrypt');
-var User = require('./../model/User');
+var User = require('./../model/PoolUser');
 
 function signin(userdata, done) {
 

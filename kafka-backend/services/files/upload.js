@@ -2,10 +2,13 @@
 //var usermysql = require('./../mysql/userMysql_connectionpooled');
 var mysql = require('./../mysql/fileMysql');
 var usermysql = require('./../mysql/userMysql');
-var File = require('./../model/File');
-var FileLink = require('./../model/FileLink');
-var User = require('./../model/User');
-var FileActivity = require('./../model/FileActivity');
+var File = require('./../model/PoolFile');
+var User = require('./../model/PoolUser');
+var FileActivity = require('./../model/PoolFileActivity');
+var FileLink = require('./../model/PoolFileLink');
+var SharedFile = require('./../model/PoolSharedFile');
+var LifeEvents = require('./../model/PoolLifeEvents');
+var Groups = require('./../model/PoolGroups');
 
 var mime = require('mime-types');
 var fs = require("fs");

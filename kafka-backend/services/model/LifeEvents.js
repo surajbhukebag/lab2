@@ -8,7 +8,7 @@ var lifeEventsSchema = new Schema({
     userId: String,
     fileCount: Number,
     fodlerCount: Number,
-    downloadCOunt: Number,
+    downloadCount: Number,
     shareLinkCount: Number,
     shareFileFolderCount: Number
 });
