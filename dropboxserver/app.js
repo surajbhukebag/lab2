@@ -69,14 +69,15 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 
-function isAtuthenticated(req, res, next) {    
-    if (req.session.user) {
-        next();
-    } else {
+function isAtuthenticated(req, res, next) {     
+  if (req.session.user) {
+      next();
+  } else {
       res.setHeader('Content-Type', 'application/json');
       res.send(JSON.stringify({ code: 502, msg: "Invalid Session" }));
-    }
+  }
 }
+
 app.post('/signup', cors(corsOptions), user.signup);
 app.post('/signin', cors(corsOptions), function(req, res) {
 
