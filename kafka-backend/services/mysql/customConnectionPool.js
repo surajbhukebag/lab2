@@ -8,7 +8,7 @@ function ConnectionManager() {
 
     if (!poolCreated) {
         for (var i = 0; i < 10; i++) {
-        	console.log("Creating connection ------------------------------------------------------------------------------------")
+        	console.log("Creating connection ------------------------------------------------")
             pool.push(mongoose.connect("mongodb://localhost:27017/dropbox"));
         }
         poolCreated = true;
