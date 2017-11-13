@@ -17,6 +17,7 @@ describe("User Related APIs", function() {
                 res.body.code.should.equals(500);
                 done();
             });
+
     });
 
     it("should through error for duplicate email", function(done) {
@@ -197,6 +198,47 @@ describe("User Related APIs : authenticated requests", function() {
                 let files = res.body.files;
                 let size = files.size();
                 size.should.equals(3);
+                done();
+            });
+    });
+
+    it("should list groups of specfic user", function(done) {
+        authenticated.post('/userGroups')
+            .send({ "email": "suraj@gmail.com" })
+            .expect("Content-type", /json/)
+            .expect(200)
+            .end(function(err, res) {
+                res.status.should.equal(200);
+                res.body.code.should.equals(200);
+                let groups = res.body.groups;
+                let size = groups.size();
+                size.should.equals(1);
+                done();
+            });
+    });
+
+    it("should create new group for specfic user", function(done) {
+        authenticated.post('/userGroups')
+            .send({ "userId": "5a08dd329583697e95a74cfe", "name":"My Group", "members":"user1@gmail.com, user2@gmail.com" })
+            .expect("Content-type", /json/)
+            .expect(200)
+            .end(function(err, res) {
+                res.status.should.equal(200);
+                res.body.code.should.equals(200);
+                res.body.msg.should.equals("New group created.");
+                done();
+            });
+    });
+
+    it("should return lifetime counts of files for specfic user", function(done) {
+        authenticated.get('/lifeEvents/5a08dd329583697e95a74cfe')
+            .expect("Content-type", /json/)
+            .expect(200)
+            .end(function(err, res) {
+                res.status.should.equal(200);
+                res.body.code.should.equals(200);
+                let events = res.body.events;
+                events.fileCount.should.equals(13);
                 done();
             });
     });
